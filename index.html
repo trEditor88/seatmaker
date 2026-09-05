@@ -202,7 +202,7 @@ input:focus,select:focus{outline:2px solid var(--teal);outline-offset:-1px}
     <div class="mark">🪑</div>
     <h1>자리 뽑기</h1>
     <p>비밀번호를 입력하고 입장하세요</p>
-    <input type="password" id="pw" placeholder="비밀번호" maxlength="20" autocomplete="off">
+    <input type="password" id="pw" placeholder="비밀번호" maxlength="30" autocomplete="off">
     <button class="btn" id="loginBtn">입장</button>
     <div class="err" id="loginErr"></div>
   </div>
@@ -230,7 +230,7 @@ input:focus,select:focus{outline:2px solid var(--teal);outline-offset:-1px}
 <div class="overlay hidden" id="adminModal">
   <div class="modal admin">
     <div class="mhead"><h2>설정</h2><button class="x" id="adminClose" aria-label="닫기">✕</button></div>
-    <div class="pubbar hidden" id="pubbar"><span id="pubStatus"></span><button class="btn sm" id="pubBtn">설정 배포</button></div>
+    <div class="pubbar hidden" id="pubbar"><span id="pubStatus"></span><button class="btn sm hidden" id="retryBtn">다시 저장</button></div>
     <div class="tabs">
       <button class="tab on" data-tab="students">학생</button>
       <button class="tab" data-tab="rules">규칙</button>
@@ -248,7 +248,7 @@ input:focus,select:focus{outline:2px solid var(--teal);outline-offset:-1px}
       <div class="names" id="names"></div>
     </div>
     <div class="panel" data-panel="rules">
-      <div class="def"><b>짝(좌우)</b> 같은 분단, 같은 행에 나란히 앉은 두 사람 · <b>짝(앞뒤)</b> 같은 열에서 행이 한 칸 차이 · <b>짝(대각)</b> 같은 분단에서 행이 한 칸 차이나고 열이 다른 두 사람<br>규칙은 뽑기 때 최대한 반영되며, 서로 충돌하면 일부는 적용되지 않을 수 있습니다.</div>
+      <div class="def"><b>짝(좌우)</b> 같은 분단, 같은 행에 나란히 앉은 두 사람 · <b>짝(앞뒤)</b> 같은 열에서 행이 한 칸 차이 · <b>짝(대각)</b> 같은 분단에서 행이 한 칸 차이나고 열이 다른 두 사람<br>규칙을 모두 만족하는 배치가 없으면 뽑기 때 "관리자 확인 필요" 창이 뜹니다.</div>
       <div class="frow">
         <select id="ruleA"></select><span style="color:var(--gray)">×</span><select id="ruleB"></select>
         <select id="ruleType">
@@ -314,18 +314,14 @@ input:focus,select:focus{outline:2px solid var(--teal);outline-offset:-1px}
 <button type="button" id="fab" class="hidden" aria-label="규칙 적용"></button>
 <div class="toast" id="toast"></div>
 <canvas id="cv" class="hidden"></canvas>
-<script id="cfg" type="application/json">{"ver":0}</script>
 
 <script>
 (() => {
 'use strict';
-const SRC = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
-let CFG = { ver: 0 };
-try { CFG = JSON.parse(document.getElementById('cfg').textContent) || CFG; } catch (e) {}
-const SYNC_URL = 'https://script.google.com/macros/s/AKfycbwCuf_q_4BvWMLA5FfLk1qZQaKAVBtlqyVzvVAYUNTSM8Z8U2wMb1lGWq_ojx5KPoc_/exec';  // 설정 서버(Apps Script 웹 앱) 주소. 비워 두면 서버 동기화를 쓰지 않음
-const SYNC_ON = /^https?:\/\//.test(SYNC_URL);
-const KEY = 'seat_lottery_v3', ROWS = 5, COLS = 6, TOTAL = ROWS * COLS, LIMIT = 12;
-const ADMIN_PW = '0929', USER_PW = '8888';
+const SYNC_URL = 'https://script.google.com/macros/s/AKfycbwCuf_q_4BvWMLA5FfLk1qZQaKAVBtlqyVzvVAYUNTSM8Z8U2wMb1lGWq_ojx5KPoc_/exec';
+const ADMIN_HASH = '58f80cb81ed4b05cedac165d4ab30fd9e307d17d0f142ca708dd999ab479b238';
+const USER_HASH = '2926a2731f4b312c08982cacf8061eb14bf65c1a87cc5d70e864e079c6220731';
+const KEY = 'seat_lottery_v3', ROWS = 5, COLS = 6, TOTAL = ROWS * COLS, LIMIT = 12, HISTORY_MAX = 20;
 const FRONT = [0, 1], BACK = [3, 4];
 const NAMES = {
   2:'김도연', 3:'김서준', 4:'김서현', 5:'김세준', 6:'김연서', 7:'김예은', 8:'김윤', 9:'김진서', 10:'김하은',
@@ -344,6 +340,10 @@ const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 const rc = i => ({ r: Math.floor(i / COLS), c: i % COLS });
 const zone = r => FRONT.includes(r) ? 'front' : BACK.includes(r) ? 'back' : '';
 const seatName = i => { const p = rc(i); return `${Math.floor(p.c / 2) + 1}분단 ${p.r + 1}행 ${p.c % 2 ? '오른쪽' : '왼쪽'}`; };
+async function sha(s) {
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+}
 
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
@@ -351,33 +351,12 @@ const store = {
   sget(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } },
   sset(k, v) { try { v == null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch (e) {} }
 };
-const fresh = () => ({ maxNo: 33, absent: [1, 11, 33], rosterVer: 2, names: { ...NAMES }, rules: [], fixed: [], history: [], effect: true, rulesOn: true, front: [], back: [], current: null });
 const S = (() => {
-  const base = fresh();
-  try {
-    const p = JSON.parse(store.get(KEY));
-    if (p && typeof p === 'object') { Object.assign(base, p); base.rosterVer = p.rosterVer || 0; }
-  } catch (e) {}
-  if (base.rosterVer < 2) {
-    base.maxNo = Math.max(base.maxNo, 33);
-    base.names[33] = base.names[33] || '나윤서';
-    if (!base.absent.includes(33)) base.absent.push(33);
-    base.rosterVer = 2;
-  }
+  const base = { maxNo: 33, absent: [1, 11, 33], names: { ...NAMES }, rules: [], fixed: [], history: [], effect: true, rulesOn: true, front: [], back: [], current: null, cfgVer: 0, cfgDirty: false };
+  try { const p = JSON.parse(store.get(KEY)); if (p && typeof p === 'object') Object.assign(base, p); } catch (e) {}
   return base;
 })();
-function applyCfg(cfg) {
-  if (!cfg || (cfg.ver || 0) <= (S.cfgVer || 0)) return false;
-  for (const k of ['maxNo', 'absent', 'names', 'rules', 'fixed']) if (cfg[k] !== undefined) S[k] = cfg[k];
-  S.cfgVer = cfg.ver; S.cfgDirty = false;
-  S.front = S.front.filter(n => !S.absent.includes(n) && n <= S.maxNo);
-  S.back = S.back.filter(n => !S.absent.includes(n) && n <= S.maxNo);
-  return true;
-}
-applyCfg(CFG);
 const save = () => store.set(KEY, JSON.stringify(S));
-const touch = () => { S.cfgDirty = true; save(); pubStatus(); };
-save();
 
 let role = store.sget('sl_role'), busy = false, edit = false, sel = null, manual = null, seats = [];
 
@@ -417,6 +396,60 @@ function beep(freq, dur, type = 'sine') {
   };
   if (audio.state === 'running') play(); else audio.resume().then(play, () => {});
 }
+
+/* ---------- server sync ---------- */
+let serverVer = 0, syncState = 'idle', autosaveTimer = null;
+async function api(body) {
+  const r = await fetch(SYNC_URL, { method: 'POST', body: JSON.stringify({ ...body, pw: store.sget('sl_pw') || '' }) });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || 'fail');
+  return j;
+}
+function applyCfg(cfg) {
+  if (!cfg || (cfg.ver || 0) <= (S.cfgVer || 0)) return false;
+  for (const k of ['maxNo', 'absent', 'names', 'rules', 'fixed']) if (cfg[k] !== undefined) S[k] = cfg[k];
+  S.cfgVer = cfg.ver; S.cfgDirty = false;
+  S.front = S.front.filter(active); S.back = S.back.filter(active);
+  return true;
+}
+async function syncFromServer() {
+  try {
+    const r = await fetch(SYNC_URL + '?action=get&t=' + Date.now(), { cache: 'no-store' });
+    const d = await r.json();
+    if (!d || typeof d.ver !== 'number') return;
+    serverVer = d.ver;
+    if (Array.isArray(d.history)) S.history = d.history;
+    const changed = applyCfg(d);
+    save(); board(); info();
+    if (!modal.classList.contains('hidden')) adminRefresh();
+    if (changed && role === 'admin') toast('다른 기기에서 바꾼 설정을 받았습니다');
+    pubStatus();
+  } catch (e) {}
+}
+function touch() {
+  S.cfgDirty = true; save(); syncState = 'pending'; pubStatus();
+  clearTimeout(autosaveTimer); autosaveTimer = setTimeout(autosave, 1200);
+}
+async function autosave() {
+  if (!S.cfgDirty) return;
+  syncState = 'saving'; pubStatus();
+  try {
+    const j = await api({ action: 'set', cfg: { maxNo: S.maxNo, absent: S.absent, names: S.names, rules: S.rules, fixed: S.fixed } });
+    S.cfgVer = serverVer = j.ver; S.cfgDirty = false; syncState = 'saved'; save();
+  } catch (e) {
+    syncState = e.message === 'bad_pw' ? 'badpw' : 'error';
+  }
+  pubStatus();
+}
+function pubStatus() {
+  const el = $('pubStatus'); if (!el) return;
+  const when = S.cfgVer ? fmt(S.cfgVer, true) : '없음';
+  const msg = { pending: '<span class="dirty">저장 대기 중</span>', saving: '<span class="dirty">서버에 저장 중…</span>', error: '<span class="dirty">저장 실패 · 인터넷 연결을 확인하세요</span>', badpw: '<span class="dirty">저장 실패 · 서버 비밀번호가 다릅니다</span>' }[syncState] || (S.cfgDirty ? '<span class="dirty">저장되지 않은 변경 있음</span>' : '모든 기기에 적용됨');
+  el.innerHTML = `서버 설정 <b>${when}</b> · ${msg}`;
+  $('retryBtn').classList.toggle('hidden', !(syncState === 'error' || syncState === 'badpw'));
+}
+$('retryBtn').addEventListener('click', autosave);
+window.addEventListener('beforeunload', e => { if (S.cfgDirty) { e.preventDefault(); e.returnValue = ''; } });
 
 /* ---------- assignment ---------- */
 function relation(i, j) {
@@ -571,12 +604,13 @@ const ACT = {
     edit = false; sel = null; board(); info();
     toast('학생을 고른 뒤 자리를 클릭하면 배치됩니다');
   },
-  save() {
+  async save() {
     const c = S.current; if (!c) return;
-    S.history.unshift({ ts: Date.now(), assign: c.assign.slice(), meta: { ...c.meta }, front: S.front.slice(), back: S.back.slice() });
-    S.history.length = Math.min(S.history.length, 20);
+    const entry = { ts: Date.now(), assign: c.assign.slice(), meta: { ...c.meta }, front: S.front.slice(), back: S.back.slice() };
+    S.history.unshift(entry); S.history.length = Math.min(S.history.length, HISTORY_MAX);
     c.saved = true; save(); info(); adminHistory();
-    toast('자리판을 저장했습니다');
+    try { const j = await api({ action: 'histadd', entry }); S.history = j.history; save(); info(); adminHistory(); toast('자리판을 저장했습니다. 모든 기기에서 볼 수 있습니다'); }
+    catch (e) { toast('이 기기에만 저장됐습니다. 인터넷 연결을 확인하세요'); }
   },
   share: exportPNG,
   edit() { edit = !edit; sel = null; board(); info(); if (edit) toast('자리 두 개를 차례로 클릭하면 서로 바뀝니다'); },
@@ -606,9 +640,11 @@ function loadHistory(i) {
   edit = false; sel = null; manual = null; save(); board(); info();
   toast(`${fmt(e.ts)} 자리판을 불러왔습니다`);
 }
-function deleteHistory(i) {
-  if (!confirm('이 기록을 삭제할까요?')) return;
+async function deleteHistory(i) {
+  const e = S.history[i]; if (!e || !confirm('이 기록을 삭제할까요?')) return;
   S.history.splice(i, 1); save(); info(); adminHistory();
+  try { const j = await api({ action: 'histdel', ts: e.ts }); S.history = j.history; save(); info(); adminHistory(); }
+  catch (err) { toast('서버에서 삭제하지 못했습니다. 인터넷 연결을 확인하세요'); }
 }
 
 /* ---------- draw flow ---------- */
@@ -775,6 +811,7 @@ $('shotClose').addEventListener('click', closeShot);
 $('shot').addEventListener('click', e => { if (e.target === $('shot')) closeShot(); });
 
 /* ---------- admin ---------- */
+const modal = $('adminModal');
 function adminRefresh() {
   $('rosterCount').textContent = `배정 인원 ${roster().length}명`;
   $('names').innerHTML = Array.from({ length: S.maxNo }, (_, k) => {
@@ -795,71 +832,14 @@ function adminHistory() {
   const el = $('adminHist');
   el.innerHTML = S.history.length ? S.history.map((e, i) => `<div class="item"><div><b>${fmt(e.ts, true)}</b><span>${e.assign.filter(Boolean).length}명 배정</span></div><div class="acts"><button class="btn sm danger" data-del="${i}">삭제</button></div></div>`).join('') : '<div class="empty">저장된 기록이 없습니다.</div>';
 }
-const modal = $('adminModal');
-let artifactApi = null;
-function pubStatus() {
-  const el = $('pubStatus'); if (!el) return;
-  el.innerHTML = `${SYNC_ON ? '서버 설정' : '배포된 설정'} <b>${CFG.ver ? fmt(CFG.ver, true) : '없음'}</b>` + (S.cfgDirty ? ' · <span class="dirty">배포되지 않은 변경 있음</span>' : ' · 최신');
+function openAdmin() {
+  if (role !== 'admin') return;
+  $('maxNo').value = S.maxNo; $('maxErr').textContent = '';
+  adminRefresh(); pubStatus(); $('pubbar').classList.remove('hidden');
+  modal.classList.remove('hidden');
+  if (!S.cfgDirty) syncFromServer();
 }
-async function publishCfg() {
-  if (SYNC_ON) return publishServer();
-  if (!artifactApi) return;
-  const btn = $('pubBtn'); btn.disabled = true;
-  const cfg = { ver: Date.now(), maxNo: S.maxNo, absent: S.absent, names: S.names, rules: S.rules, fixed: S.fixed };
-  const json = JSON.stringify(cfg).replace(/</g, '\\u003c');
-  const html = SRC
-    .replace(/<script id="cfg" type="application\/json">[\s\S]*?<\/script>/, `<script id="cfg" type="application/json">${json}<\/script>`)
-    .replace(/^(<!DOCTYPE html>\n<html[^>]*?)\s+data-theme="[^"]*"/, '$1');
-  const prevVer = S.cfgVer, prevDirty = S.cfgDirty;
-  S.cfgVer = cfg.ver; S.cfgDirty = false; save();
-  try {
-    await artifactApi.publish(html);
-    toast('설정을 배포했습니다. 잠시 후 새 버전으로 열립니다');
-  } catch (e) {
-    const code = e && e.code;
-    if (code !== 'conflict') { S.cfgVer = prevVer; S.cfgDirty = prevDirty; save(); pubStatus(); }
-    if (code === 'not_writer' || code === 'not_granted') toast('이 계정은 배포 권한이 없습니다');
-    else if (code === 'rate_limited') toast('너무 자주 배포했습니다. 잠시 후 다시 시도하세요');
-    else if (code !== 'conflict') toast('배포하지 못했습니다 (' + (code || '알 수 없음') + ')');
-  } finally { btn.disabled = false; }
-}
-async function publishServer() {
-  const btn = $('pubBtn'); btn.disabled = true;
-  const cfg = { maxNo: S.maxNo, absent: S.absent, names: S.names, rules: S.rules, fixed: S.fixed };
-  try {
-    const r = await fetch(SYNC_URL, { method: 'POST', body: JSON.stringify({ action: 'set', pw: ADMIN_PW, cfg }) });
-    const j = await r.json();
-    if (!j.ok) throw new Error(j.error || 'fail');
-    CFG = { ...cfg, ver: j.ver }; S.cfgVer = j.ver; S.cfgDirty = false; save(); pubStatus();
-    toast('설정을 배포했습니다. 모든 기기에 바로 적용됩니다');
-  } catch (e) {
-    toast(e.message === 'bad_pw' ? '서버의 관리자 비밀번호와 다릅니다' : '배포하지 못했습니다. 인터넷 연결과 서버 주소를 확인하세요');
-  } finally { btn.disabled = false; }
-}
-async function syncFromServer() {
-  try {
-    const r = await fetch(SYNC_URL + (SYNC_URL.includes('?') ? '&' : '?') + 'action=get&t=' + Date.now(), { cache: 'no-store' });
-    const cfg = await r.json();
-    if (!cfg || typeof cfg.ver !== 'number') return;
-    const newer = cfg.ver > (CFG.ver || 0);
-    CFG = cfg;
-    if (applyCfg(cfg)) {
-      save(); board(); info();
-      if (!modal.classList.contains('hidden')) adminRefresh();
-      if (role === 'admin' && newer) toast('배포된 최신 설정을 받았습니다');
-    }
-    pubStatus();
-  } catch (e) {}
-}
-if (SYNC_ON) {
-  $('pubbar').classList.remove('hidden');
-  syncFromServer();
-} else if (window.claude && typeof claude.use === 'function') {
-  claude.use('artifact').then(api => { artifactApi = api; if (api) { $('pubbar').classList.remove('hidden'); pubStatus(); } }, () => {});
-}
-$('pubBtn').addEventListener('click', publishCfg);
-function openAdmin() { if (role !== 'admin') return; $('maxNo').value = S.maxNo; $('maxErr').textContent = ''; adminRefresh(); pubStatus(); $('adminModal').classList.remove('hidden'); if (SYNC_ON && !S.cfgDirty) syncFromServer(); }
-function closeAdmin() { $('adminModal').classList.add('hidden'); board(); info(); }
+function closeAdmin() { modal.classList.add('hidden'); board(); info(); }
 
 let nameTimer;
 modal.addEventListener('click', e => {
@@ -912,9 +892,10 @@ $('fixAdd').addEventListener('click', () => {
   if (S.fixed.some(f => f.seat === seat)) return err.textContent = `${seatName(seat)}에는 이미 다른 학생이 고정되어 있습니다.`;
   S.fixed.push({ n, seat }); touch(); adminRefresh();
 });
-$('histClear').addEventListener('click', () => {
+$('histClear').addEventListener('click', async () => {
   if (!S.history.length || !confirm('저장된 기록을 모두 삭제할까요? 되돌릴 수 없습니다.')) return;
   S.history = []; save(); adminRefresh(); info();
+  try { await api({ action: 'histclear' }); } catch (e) { toast('서버에서 삭제하지 못했습니다. 인터넷 연결을 확인하세요'); }
 });
 
 /* ---------- events ---------- */
@@ -941,20 +922,23 @@ function enter(r) {
   $('login').classList.add('hidden'); $('app').classList.remove('hidden');
   $('roleBadge').classList.toggle('hidden', r !== 'admin');
   $('adminBtn').classList.toggle('hidden', r !== 'admin');
-  fab(); board(); info();
+  fab(); board(); info(); syncFromServer();
 }
-function login() {
+async function login() {
   const v = $('pw').value.trim(), err = $('loginErr');
   if (!v) return err.textContent = '비밀번호를 입력하세요.';
-  if (v !== ADMIN_PW && v !== USER_PW) { err.textContent = '비밀번호가 올바르지 않습니다.'; $('pw').select(); return; }
-  err.textContent = ''; $('pw').value = '';
-  enter(v === ADMIN_PW ? 'admin' : 'user');
+  let h = '';
+  try { h = await sha(v); } catch (e) { err.textContent = '이 브라우저에서는 로그인할 수 없습니다.'; return; }
+  const r = h === ADMIN_HASH ? 'admin' : h === USER_HASH ? 'user' : null;
+  if (!r) { err.textContent = '비밀번호가 올바르지 않습니다.'; $('pw').select(); return; }
+  err.textContent = ''; $('pw').value = ''; store.sset('sl_pw', v);
+  enter(r);
 }
 $('loginBtn').addEventListener('click', login);
 $('pw').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
 $('adminBtn').addEventListener('click', openAdmin);
 $('logoutBtn').addEventListener('click', () => {
-  role = null; store.sset('sl_role', null);
+  role = null; store.sset('sl_role', null); store.sset('sl_pw', null);
   edit = false; sel = null; manual = null;
   fab(); $('app').classList.add('hidden'); $('login').classList.remove('hidden');
   $('pw').value = ''; $('loginErr').textContent = '';
@@ -966,8 +950,8 @@ document.addEventListener('keydown', e => {
   closeShot();
 });
 
-if (role === 'admin' || role === 'user') enter(role);
-else setTimeout(() => $('pw').focus(), 50);
+if ((role === 'admin' || role === 'user') && store.sget('sl_pw')) enter(role);
+else { role = null; store.sset('sl_role', null); setTimeout(() => $('pw').focus(), 50); }
 })();
 </script>
 </body>
