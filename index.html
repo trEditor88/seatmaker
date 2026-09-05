@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>자리 뽑기</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#21295c;--teal:#1c7293;--deep:#065a82;--bg:#f3f8fb;--line:#d5e4ee;--tint:#eaf3f8;
+  --coral:#e4572e;--coral-bg:#fdf0f0;--gold:#ffc145;--gold-bg:#fff4d6;--gray:#5a6472;--muted:#9aa6b2;
+  --r:8px;--font:"Malgun Gothic","맑은 고딕","Noto Sans KR","Apple SD Gothic Neo",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:#222;font:14px/1.5 var(--font);min-height:100vh;overflow-x:hidden}
+button,input,select{font:inherit;color:inherit}
+h1,h2,h3{margin:0;color:var(--navy);font-weight:700}
+.hidden{display:none!important}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 16px;border-radius:var(--r);border:1px solid var(--teal);background:var(--teal);color:#fff;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .12s,color .12s,border-color .12s}
+.btn:hover{background:var(--deep);border-color:var(--deep)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.outline{background:#fff;color:var(--teal)}
+.btn.outline:hover{background:var(--tint);border-color:var(--teal)}
+.btn.ghost{background:transparent;color:var(--gray);border-color:var(--line)}
+.btn.ghost:hover{background:#fff;color:var(--navy);border-color:var(--gray)}
+.btn.danger{background:transparent;color:var(--coral);border-color:var(--coral)}
+.btn.danger:hover{background:var(--coral-bg);border-color:var(--coral)}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+.btn.gold:hover{background:#f2b32e;border-color:#f2b32e}
+.btn.big{padding:14px;font-size:16px;width:100%}
+.btn.full{width:100%}
+.btn.sm{padding:5px 10px;font-size:12px;border-radius:6px}
+
+input[type=text],input[type=number],input[type=password],select{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:#fff}
+input:focus,select:focus{outline:2px solid var(--teal);outline-offset:-1px}
+
+.overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(33,41,92,.5);padding:20px}
+.modal{background:#fff;border-radius:12px;padding:28px 30px;width:420px;max-width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(33,41,92,.3)}
+
+#login{background:var(--navy)}
+.login{text-align:center}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:10px;background:var(--navy);color:#fff;font-size:22px;line-height:1}
+.login .mark{width:56px;height:56px;font-size:28px;margin-bottom:12px}
+.login h1{font-size:24px}
+.login p{margin:6px 0 20px;color:var(--gray);font-size:13px}
+.login input{width:100%;text-align:center;letter-spacing:4px;font-size:18px;margin-bottom:10px}
+.login .btn{width:100%}
+.err{min-height:18px;margin-top:8px;color:var(--coral);font-size:12px;font-weight:700}
+
+.app{max-width:1400px;margin:0 auto;padding:20px 28px 60px}
+.top{display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;margin-bottom:20px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand h1{font-size:20px}
+.right{display:flex;align-items:center;gap:8px}
+.badge{font-size:11px;font-weight:700;color:var(--deep);background:var(--tint);padding:3px 8px;border-radius:4px}
+.layout{display:grid;grid-template-columns:2fr 1fr;gap:24px;align-items:start}
+@media(max-width:1000px){.layout{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+.card h3{font-size:14px;display:flex;align-items:center;justify-content:space-between}
+.card .hint{margin:4px 0 12px;font-size:12px;color:var(--gray)}
+
+.board-wrap{padding:24px 28px}
+.podium{margin:0 auto 20px;width:200px;padding:8px 0;text-align:center;background:var(--navy);color:#fff;border-radius:6px;font-weight:700;letter-spacing:6px;font-size:13px}
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 24px}
+.sec{text-align:center;font-size:12px;font-weight:700;color:var(--teal);padding-bottom:6px;border-bottom:1px dashed var(--line)}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.seat{position:relative;background:#fff;border:1px solid var(--line);border-radius:var(--r);aspect-ratio:1.25;min-height:72px;display:flex;flex-direction:column;align-items:center;justify-content:center;user-select:none;transition:transform .14s,border-color .14s,background .2s}
+.seat.front{background:var(--tint)}
+.seat.back{background:#f4f5f8}
+.seat .no{font-size:24px;font-weight:700;color:var(--navy);line-height:1.1;font-variant-numeric:tabular-nums}
+.seat .nm{font-size:12px;color:var(--gray);max-width:95%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seat.empty .nm,.seat.pre .nm{color:var(--muted);font-size:11px}
+.seat.filled{border-color:var(--teal);background:#fff}
+.seat.wf::after,.seat.wb::after{content:"";position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--teal)}
+.seat.wb::after{background:var(--gold)}
+.seat.veiled{background:var(--tint)}
+.seat.veiled>*{opacity:0}
+.seat.dealt{animation:deal .4s cubic-bezier(.2,.9,.3,1.2) both}
+@keyframes deal{from{opacity:0;transform:translateY(-12px) scale(.9)}to{opacity:1;transform:none}}
+.seat.click{cursor:pointer}
+.seat.click:hover{transform:translateY(-2px);border-color:var(--gold)}
+.seat.sel{border-color:var(--gold);background:var(--gold-bg);box-shadow:0 0 0 3px rgba(255,193,69,.35)}
+.seat.target{border-style:dashed;border-color:var(--teal);background:var(--tint)}
+.seat.swap{animation:swap .4s}
+@keyframes swap{50%{transform:scale(1.06)}}
+.foot{display:flex;gap:14px;margin-top:16px;font-size:12px;color:var(--gray)}
+.foot span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;background:var(--teal)}
+.foot span+span::before{background:var(--gold)}
+
+.info{display:flex;flex-direction:column;gap:14px}
+.count{font-size:12px;font-weight:700;color:var(--teal);background:var(--tint);padding:2px 8px;border-radius:4px}
+.count.over{color:var(--coral);background:var(--coral-bg)}
+.chips{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:6px;padding:5px 2px;font-size:13px;font-weight:700;color:var(--gray);cursor:pointer;display:flex;flex-direction:column;align-items:center;line-height:1.15}
+.chip small{font-size:9px;font-weight:400;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip:hover{border-color:var(--teal);color:var(--navy)}
+.chip.on{background:var(--teal);border-color:var(--teal);color:#fff}
+.chip.on.back{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+.chip.picked{background:var(--navy);border-color:var(--navy);color:#fff}
+.chip.on small,.chip.picked small{color:rgba(255,255,255,.8)}
+.chip.on.back small{color:rgba(33,41,92,.7)}
+.chip.dim{opacity:.35}
+.warn{font-size:12px;color:var(--coral);font-weight:700;margin-top:10px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.row .lbl{font-weight:700;color:var(--navy)}
+.row .sub{font-size:11.5px;color:var(--gray)}
+.switch{position:relative;width:44px;height:24px;border-radius:12px;background:#c9d6e2;border:0;cursor:pointer;flex:none;transition:background .2s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s}
+.switch.on{background:var(--teal)}
+.switch.on::after{left:23px}
+.result{border-top:3px solid var(--navy)}
+.result .meta{font-size:12.5px;color:var(--gray);margin-top:4px}
+.result .meta b{color:var(--navy)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.note{font-size:12px;color:var(--gray);text-align:center}
+.editbox{background:var(--gold-bg);border-color:var(--gold)}
+.editbox p{margin:0 0 10px;font-size:13px;color:#6b4a00}
+.list{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto}
+.item{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px dashed var(--line);border-radius:var(--r);padding:8px 12px;font-size:12.5px}
+.item b{color:var(--navy);display:block}
+.item span{color:var(--gray);font-size:11.5px}
+.item .acts{display:flex;gap:6px;flex:none}
+.empty{font-size:12.5px;color:var(--gray);padding:4px 0}
+
+.admin{width:760px}
+.mhead{display:flex;align-items:center;justify-content:space-between}
+.mhead h2{font-size:18px}
+.x{background:none;border:0;font-size:20px;color:var(--gray);cursor:pointer}
+.tabs{display:flex;gap:4px;margin:12px 0 16px;border-bottom:1px solid var(--line)}
+.tab{background:none;border:0;padding:8px 12px;font-weight:700;color:var(--gray);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.on{color:var(--teal);border-bottom-color:var(--teal)}
+.panel{display:none}
+.panel.on{display:block}
+.frow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.frow label{font-size:13px;color:var(--gray);font-weight:700}
+.frow input[type=number]{width:84px}
+.names{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.names label{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--gray)}
+.names b{width:24px;text-align:right;color:var(--navy);flex:none}
+.names input[type=text]{flex:1;min-width:0;padding:6px 8px;font-size:13px}
+.names label.absent{opacity:.5}
+.names label.absent input[type=text]{text-decoration:line-through;background:var(--tint)}
+.names .abs{display:flex;align-items:center;gap:3px;font-size:11px;flex:none;cursor:pointer}
+.names .abs input{margin:0;accent-color:var(--coral)}
+.def{background:var(--tint);border-radius:var(--r);padding:10px 12px;font-size:12.5px;color:var(--gray);margin-bottom:12px}
+.def b{color:var(--navy)}
+.tag{font-size:11px;padding:2px 7px;border-radius:4px;background:var(--tint);color:var(--deep);font-weight:700;margin-left:6px}
+.tag.off{background:var(--coral-bg);color:var(--coral)}
+.subh{font-size:14px;margin:20px 0 8px}
+.pubbar{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--tint);border-radius:var(--r);padding:10px 14px;margin:12px 0 4px;font-size:12.5px;color:var(--gray)}
+.pubbar b{color:var(--navy)}
+.pubbar .dirty{color:var(--coral);font-weight:700}
+.rules{margin-top:12px}
+
+.elim{width:640px;text-align:center}
+.elim h2{font-size:20px}
+.elim p{margin:6px 0 16px;color:var(--gray);font-size:13px}
+.echips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:16px}
+.echip{min-width:64px;padding:8px 10px;border-radius:var(--r);border:2px solid var(--line);font-weight:700;font-size:16px;color:var(--navy);display:flex;flex-direction:column;align-items:center;line-height:1.15;transition:transform .08s,background .08s}
+.echip small{font-size:10px;font-weight:400;color:var(--gray)}
+.echip.hot{background:var(--gold);border-color:var(--gold);transform:scale(1.1)}
+.echip.out{background:var(--coral);border-color:var(--coral);color:#fff;text-decoration:line-through;animation:outShake .5s}
+.echip.out small{color:rgba(255,255,255,.8)}
+@keyframes outShake{20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.eres{font-size:14px;color:var(--coral);font-weight:700;min-height:22px;margin-bottom:12px}
+
+#cd{background:radial-gradient(circle,#1c7293 0%,#21295c 55%,#0d1233 100%);animation:pulse 1s infinite}
+@keyframes pulse{50%{filter:brightness(1.25)}}
+.cd-label{position:absolute;top:12vh;left:0;right:0;text-align:center;color:rgba(255,255,255,.7);font-size:18px;letter-spacing:8px;font-weight:700}
+.cd-ring{position:absolute;width:40vmin;height:40vmin;top:calc(50% - 20vmin);left:calc(50% - 20vmin);border-radius:50%;border:6px solid rgba(255,193,69,.8);pointer-events:none}
+.cd-ring.ring{animation:ring .95s ease-out both}
+@keyframes ring{from{transform:scale(.4);opacity:1}to{transform:scale(3.2);opacity:0}}
+.cd-num{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:min(42vw,340px);font-weight:900;color:#fff;line-height:1;text-shadow:0 0 40px rgba(255,193,69,.6)}
+.cd-num.pop{animation:pop .95s cubic-bezier(.2,.9,.3,1) both}
+.cd-num.last{color:var(--gold);text-shadow:0 0 60px rgba(255,193,69,.9)}
+@keyframes pop{0%{transform:translate(-50%,-50%) scale(2.2);opacity:0}25%,80%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-50%) scale(.85);opacity:.2}}
+.app.shake{animation:shake .35s}
+@keyframes shake{20%{transform:translate(-5px,3px)}40%{transform:translate(5px,-3px)}60%{transform:translate(-4px,-2px)}80%{transform:translate(4px,2px)}}
+
+#fab{position:fixed;right:18px;bottom:18px;z-index:60;width:16px;height:16px;padding:0;border:0;border-radius:50%;background:var(--teal);cursor:pointer;opacity:0;transition:opacity .15s}
+#fab.on{opacity:.22}
+#fab.on:hover{opacity:.45}
+#fab:not(.on):hover{opacity:.12}
+.shot{width:960px}
+.shot img{width:100%;border:1px solid var(--line);border-radius:6px;display:block;margin-top:12px}
+.shot .share{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.shot p{margin:10px 0 0;font-size:12.5px;color:var(--gray)}
+.alert{width:360px;text-align:center}
+.alert h2{font-size:18px;color:var(--coral);margin-bottom:18px}
+.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:var(--navy);color:#fff;padding:10px 18px;border-radius:var(--r);font-size:13px;font-weight:700;opacity:0;transition:.25s;z-index:200;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%)}
+@media(prefers-reduced-motion:reduce){.seat,.seat.dealt,.seat.swap,.cd-num.pop,.cd-ring.ring,.app.shake{animation:none;transition:none}}
+</style>
+</head>
+<body>
+
+<div class="overlay" id="login">
+  <div class="modal login">
+    <div class="mark">🪑</div>
+    <h1>자리 뽑기</h1>
+    <p>비밀번호를 입력하고 입장하세요</p>
+    <input type="password" id="pw" placeholder="비밀번호" maxlength="20" autocomplete="off">
+    <button class="btn" id="loginBtn">입장</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+</div>
+
+<div class="app hidden" id="app">
+  <header class="top">
+    <div class="brand"><div class="mark">🪑</div><h1>자리 뽑기</h1></div>
+    <div class="right">
+      <span class="badge hidden" id="roleBadge">관리자</span>
+      <button class="btn outline sm hidden" id="adminBtn">설정</button>
+      <button class="btn ghost sm" id="logoutBtn">로그아웃</button>
+    </div>
+  </header>
+  <main class="layout">
+    <section class="card board-wrap">
+      <div class="podium">교 탁</div>
+      <div class="board" id="board"></div>
+      <div class="foot"><span>앞자리 희망</span><span>뒷자리 희망</span></div>
+    </section>
+    <aside class="info" id="info"></aside>
+  </main>
+</div>
+
+<div class="overlay hidden" id="adminModal">
+  <div class="modal admin">
+    <div class="mhead"><h2>설정</h2><button class="x" id="adminClose" aria-label="닫기">✕</button></div>
+    <div class="pubbar hidden" id="pubbar"><span id="pubStatus"></span><button class="btn sm" id="pubBtn">설정 배포</button></div>
+    <div class="tabs">
+      <button class="tab on" data-tab="students">학생</button>
+      <button class="tab" data-tab="rules">규칙</button>
+      <button class="tab" data-tab="history">기록</button>
+    </div>
+    <div class="panel on" data-panel="students">
+      <div class="frow">
+        <label>마지막 번호</label>
+        <input type="number" id="maxNo" min="1" max="60">
+        <button class="btn sm" id="maxApply">적용</button>
+        <span class="err" id="maxErr" style="margin:0"></span>
+        <span class="count" id="rosterCount"></span>
+      </div>
+      <p class="hint" style="font-size:12px;color:var(--gray);margin:0 0 10px">이름은 입력 즉시 저장됩니다. 빠진 번호는 결번에 체크하면 뽑기에서 제외됩니다.</p>
+      <div class="names" id="names"></div>
+    </div>
+    <div class="panel" data-panel="rules">
+      <div class="def"><b>짝(좌우)</b> 같은 분단, 같은 행에 나란히 앉은 두 사람 · <b>짝(앞뒤)</b> 같은 열에서 행이 한 칸 차이 · <b>짝(대각)</b> 같은 분단에서 행이 한 칸 차이나고 열이 다른 두 사람<br>규칙은 뽑기 때 최대한 반영되며, 서로 충돌하면 일부는 적용되지 않을 수 있습니다.</div>
+      <div class="frow">
+        <select id="ruleA"></select><span style="color:var(--gray)">×</span><select id="ruleB"></select>
+        <select id="ruleType">
+          <option value="side">짝(좌우)으로 붙이기</option>
+          <option value="front">짝(앞뒤)으로 붙이기</option>
+          <option value="diag">짝(대각)으로 붙이기</option>
+          <option value="apart">어떤 짝도 되지 않게</option>
+        </select>
+        <button class="btn sm" id="ruleAdd">추가</button>
+      </div>
+      <div class="err" id="ruleErr"></div>
+      <div class="list rules" id="ruleList"></div>
+      <h3 class="subh">자리 직접 배정</h3>
+      <div class="def">지정한 학생을 정해진 자리에 고정합니다. 앞·뒷자리 희망보다 우선 적용됩니다.</div>
+      <div class="frow">
+        <select id="fixStudent"></select>
+        <select id="fixSec"><option value="1">1분단</option><option value="2">2분단</option><option value="3">3분단</option></select>
+        <select id="fixRow"><option value="1">1행</option><option value="2">2행</option><option value="3">3행</option><option value="4">4행</option><option value="5">5행</option></select>
+        <select id="fixSide"><option value="0">왼쪽</option><option value="1">오른쪽</option></select>
+        <button class="btn sm" id="fixAdd">고정</button>
+      </div>
+      <div class="err" id="fixErr"></div>
+      <div class="list rules" id="fixList"></div>
+    </div>
+    <div class="panel" data-panel="history">
+      <div class="list" id="adminHist"></div>
+      <div style="margin-top:14px"><button class="btn danger sm" id="histClear">모든 기록 삭제</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="elim">
+  <div class="modal elim">
+    <h2 id="elimTitle"></h2>
+    <p id="elimSub"></p>
+    <div class="echips" id="elimChips"></div>
+    <div class="eres" id="elimRes"></div>
+    <button class="btn hidden" id="elimNext">확인하고 계속</button>
+  </div>
+</div>
+
+<div class="overlay hidden" id="cd">
+  <div class="cd-label">자 리 뽑 기</div>
+  <div class="cd-ring" id="cdRing"></div>
+  <div class="cd-num" id="cdNum"></div>
+</div>
+
+<div class="overlay hidden" id="shot">
+  <div class="modal shot">
+    <div class="mhead"><h2>자리 배치표</h2><button class="x" id="shotClose" aria-label="닫기">✕</button></div>
+    <img id="shotImg" alt="자리 배치표">
+    <div class="share">
+      <button class="btn" id="shareBtn">공유</button>
+      <button class="btn outline" id="copyBtn">이미지 복사</button>
+      <button class="btn outline" id="dlBtn">다운로드</button>
+    </div>
+    <p>A4 가로 크기 이미지입니다. 공유는 기기의 공유 창을 열고, 이미지 복사는 메신저나 문서에 바로 붙여넣을 수 있게 합니다.</p>
+  </div>
+</div>
+<div class="overlay hidden" id="alert">
+  <div class="modal alert"><h2>관리자 확인 필요</h2><button class="btn" id="alertOk">확인</button></div>
+</div>
+<button type="button" id="fab" class="hidden" aria-label="규칙 적용"></button>
+<div class="toast" id="toast"></div>
+<canvas id="cv" class="hidden"></canvas>
+<script id="cfg" type="application/json">{"ver":0}</script>
+
+<script>
+(() => {
+'use strict';
+const SRC = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+let CFG = { ver: 0 };
+try { CFG = JSON.parse(document.getElementById('cfg').textContent) || CFG; } catch (e) {}
+const SYNC_URL = 'https://script.google.com/macros/s/AKfycbwCuf_q_4BvWMLA5FfLk1qZQaKAVBtlqyVzvVAYUNTSM8Z8U2wMb1lGWq_ojx5KPoc_/exec';  // 설정 서버(Apps Script 웹 앱) 주소. 비워 두면 서버 동기화를 쓰지 않음
+const SYNC_ON = /^https?:\/\//.test(SYNC_URL);
+const KEY = 'seat_lottery_v3', ROWS = 5, COLS = 6, TOTAL = ROWS * COLS, LIMIT = 12;
+const ADMIN_PW = '0000', USER_PW = '8888';
+const FRONT = [0, 1], BACK = [3, 4];
+const NAMES = {
+  2:'김도연', 3:'김서준', 4:'김서현', 5:'김세준', 6:'김연서', 7:'김예은', 8:'김윤', 9:'김진서', 10:'김하은',
+  12:'문지유', 13:'박민수', 14:'박서윤', 15:'박지혁', 16:'박지후', 17:'서준성', 18:'유정원', 19:'윤지운',
+  20:'이민규', 21:'이서준', 22:'이인호', 23:'이초연', 24:'이호범', 25:'정광현', 26:'정명지', 27:'정예린',
+  28:'지은성', 29:'최수아', 30:'허원준', 31:'황시원', 32:'김지안', 33:'나윤서'
+};
+const RULE_LABEL = { side: '짝(좌우)', front: '짝(앞뒤)', diag: '짝(대각)', apart: '떨어뜨리기' };
+
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+const fmt = (ts, time) => { const d = new Date(ts); return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}` + (time ? ` ${pad(d.getHours())}:${pad(d.getMinutes())}` : ''); };
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const rc = i => ({ r: Math.floor(i / COLS), c: i % COLS });
+const zone = r => FRONT.includes(r) ? 'front' : BACK.includes(r) ? 'back' : '';
+const seatName = i => { const p = rc(i); return `${Math.floor(p.c / 2) + 1}분단 ${p.r + 1}행 ${p.c % 2 ? '오른쪽' : '왼쪽'}`; };
+
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  sget(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+  sset(k, v) { try { v == null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch (e) {} }
+};
+const fresh = () => ({ maxNo: 33, absent: [1, 11, 33], rosterVer: 2, names: { ...NAMES }, rules: [], fixed: [], history: [], effect: true, rulesOn: true, front: [], back: [], current: null });
+const S = (() => {
+  const base = fresh();
+  try {
+    const p = JSON.parse(store.get(KEY));
+    if (p && typeof p === 'object') { Object.assign(base, p); base.rosterVer = p.rosterVer || 0; }
+  } catch (e) {}
+  if (base.rosterVer < 2) {
+    base.maxNo = Math.max(base.maxNo, 33);
+    base.names[33] = base.names[33] || '나윤서';
+    if (!base.absent.includes(33)) base.absent.push(33);
+    base.rosterVer = 2;
+  }
+  return base;
+})();
+function applyCfg(cfg) {
+  if (!cfg || (cfg.ver || 0) <= (S.cfgVer || 0)) return false;
+  for (const k of ['maxNo', 'absent', 'names', 'rules', 'fixed']) if (cfg[k] !== undefined) S[k] = cfg[k];
+  S.cfgVer = cfg.ver; S.cfgDirty = false;
+  S.front = S.front.filter(n => !S.absent.includes(n) && n <= S.maxNo);
+  S.back = S.back.filter(n => !S.absent.includes(n) && n <= S.maxNo);
+  return true;
+}
+applyCfg(CFG);
+const save = () => store.set(KEY, JSON.stringify(S));
+const touch = () => { S.cfgDirty = true; save(); pubStatus(); };
+save();
+
+let role = store.sget('sl_role'), busy = false, edit = false, sel = null, manual = null, seats = [];
+
+const nameOf = n => (S.names[n] || '').trim();
+const labelOf = n => nameOf(n) ? `${n}번 ${nameOf(n)}` : `${n}번`;
+const active = n => n >= 1 && n <= S.maxNo && !S.absent.includes(n);
+const roster = () => { const r = []; for (let n = 1; n <= S.maxNo; n++) if (active(n)) r.push(n); return r; };
+const rules = () => S.rulesOn === false ? [] : S.rules.filter(r => active(r.a) && active(r.b));
+const fixedSeats = () => S.rulesOn === false ? [] : S.fixed.filter(f => active(f.n) && f.seat >= 0 && f.seat < TOTAL);
+const opt = n => `<option value="${n}">${esc(labelOf(n))}</option>`;
+
+let toastTimer;
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+let audio;
+function ensureAudio() {
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === 'suspended') audio.resume();
+  } catch (e) {}
+  return audio;
+}
+function beep(freq, dur, type = 'sine') {
+  if (!S.effect || !ensureAudio()) return;
+  const play = () => {
+    try {
+      const o = audio.createOscillator(), g = audio.createGain(), t = audio.currentTime + .02;
+      o.type = type; o.frequency.value = freq;
+      g.gain.setValueAtTime(1e-4, t);
+      g.gain.exponentialRampToValueAtTime(.4, t + .015);
+      g.gain.exponentialRampToValueAtTime(1e-4, t + dur);
+      o.connect(g).connect(audio.destination); o.start(t); o.stop(t + dur + .05);
+    } catch (e) {}
+  };
+  if (audio.state === 'running') play(); else audio.resume().then(play, () => {});
+}
+
+/* ---------- assignment ---------- */
+function relation(i, j) {
+  const a = rc(i), b = rc(j), same = Math.floor(a.c / 2) === Math.floor(b.c / 2);
+  const dr = Math.abs(a.r - b.r), dc = Math.abs(a.c - b.c);
+  if (!dr && same && dc === 1) return 'side';
+  if (!dc && dr === 1) return 'front';
+  if (same && dr === 1 && dc === 1) return 'diag';
+  return null;
+}
+function violations(assign, rs) {
+  if (!rs.length) return 0;
+  const pos = {}; assign.forEach((n, i) => { if (n) pos[n] = i; });
+  let v = 0;
+  for (const r of rs) {
+    const a = pos[r.a], b = pos[r.b];
+    if (a == null || b == null) continue;
+    const rel = relation(a, b);
+    if (r.type === 'apart' ? rel : rel !== r.type) v++;
+  }
+  return v;
+}
+function compute(trials) {
+  const fx = [], fxSeat = new Set(), fxStu = new Set();
+  for (const f of fixedSeats()) {
+    if (fxSeat.has(f.seat) || fxStu.has(f.n)) continue;
+    fxSeat.add(f.seat); fxStu.add(f.n); fx.push(f);
+  }
+  const front = S.front.filter(n => active(n) && !fxStu.has(n)), fs = new Set(front);
+  const back = S.back.filter(n => active(n) && !fs.has(n) && !fxStu.has(n)), bs = new Set(back);
+  const pool = { front: [], back: [], '': [] };
+  for (let i = 0; i < TOTAL; i++) if (!fxSeat.has(i)) pool[zone(rc(i).r)].push(i);
+  const others = roster().filter(n => !fs.has(n) && !bs.has(n) && !fxStu.has(n));
+  const rs = rules();
+  let best = null, bestV = Infinity;
+  for (let t = 0, max = rs.length ? (trials || 2500) : 1; t < max; t++) {
+    const a = new Array(TOTAL).fill(0), extra = [];
+    fx.forEach(f => { a[f.seat] = f.n; });
+    const pf = shuffle(pool.front), pb = shuffle(pool.back);
+    front.forEach(n => { const i = pf.pop(); if (i === undefined) extra.push(n); else a[i] = n; });
+    back.forEach(n => { const i = pb.pop(); if (i === undefined) extra.push(n); else a[i] = n; });
+    const left = shuffle([...pf, ...pb, ...pool['']]);
+    shuffle([...others, ...extra]).forEach((n, k) => { if (k < left.length) a[left[k]] = n; });
+    const v = violations(a, rs);
+    if (v < bestV) { bestV = v; best = a; if (!v) break; }
+  }
+  return { assign: best, violations: bestV, meta: { front: front.length, back: back.length } };
+}
+
+/* ---------- board ---------- */
+function board(veiled) {
+  const cur = manual ? manual.assign : S.current && S.current.assign;
+  const wf = new Set(S.front), wb = new Set(S.back);
+  let html = '<div class="sec">1분단</div><div class="sec">2분단</div><div class="sec">3분단</div>';
+  for (let r = 0; r < ROWS; r++) for (let s = 0; s < 3; s++) {
+    html += '<div class="pair">';
+    for (const c of [s * 2, s * 2 + 1]) {
+      const i = r * COLS + c, n = cur ? cur[i] : 0, cls = ['seat', zone(r)];
+      let body;
+      if (!cur) { cls.push('pre'); body = `<span class="nm">${s + 1}분단</span>`; }
+      else if (n) { cls.push('filled', wf.has(n) ? 'wf' : wb.has(n) ? 'wb' : ''); body = `<span class="no">${n}</span><span class="nm">${esc(nameOf(n))}</span>`; }
+      else { cls.push('empty'); body = '<span class="nm">빈자리</span>'; }
+      if (veiled) cls.push('veiled');
+      if (manual) { cls.push('click'); if (manual.pick !== null && !n) cls.push('target'); }
+      if (edit) { cls.push('click'); if (sel === i) cls.push('sel'); }
+      html += `<div class="${cls.filter(Boolean).join(' ')}" data-i="${i}">${body}</div>`;
+    }
+    html += '</div>';
+  }
+  $('board').innerHTML = html;
+  seats = [...$('board').querySelectorAll('.seat')];
+}
+function seatClick(i) {
+  if (manual) {
+    const a = manual.assign;
+    if (manual.pick !== null) { const p = a.indexOf(manual.pick); if (p >= 0) a[p] = 0; a[i] = manual.pick; manual.pick = null; }
+    else if (a[i]) a[i] = 0;
+    board(); info(); return;
+  }
+  if (!edit || !S.current || busy) return;
+  if (sel === null || sel === i) { sel = sel === i ? null : i; board(); return; }
+  const a = S.current.assign; [a[sel], a[i]] = [a[i], a[sel]];
+  const j = sel; sel = null; S.current.saved = false; save();
+  board(); seats[i].classList.add('swap'); seats[j].classList.add('swap'); info();
+}
+async function reveal() {
+  board(true);
+  shuffle(seats.map((_, i) => i)).forEach((i, k) => setTimeout(() => {
+    const s = seats[i]; if (!s) return;
+    s.classList.remove('veiled'); s.classList.add('dealt');
+    if (k % 3 === 0) beep(600 + k * 12, .06, 'triangle');
+  }, k * 65));
+  await sleep(TOTAL * 65 + 450);
+}
+
+/* ---------- info panel ---------- */
+const chip = (n, kind) => {
+  const on = S[kind].includes(n), other = S[kind === 'front' ? 'back' : 'front'].includes(n), nm = nameOf(n);
+  return `<button type="button" class="chip${on ? ' on' : ''}${on && kind === 'back' ? ' back' : ''}${other ? ' dim' : ''}" data-n="${n}" data-kind="${kind}" title="${esc(labelOf(n))}">${n}${nm ? `<small>${esc(nm)}</small>` : ''}</button>`;
+};
+function preView() {
+  const r = roster(), N = r.length;
+  const list = (kind, title, hint) => {
+    const l = S[kind], over = l.length > LIMIT;
+    return `<div class="card"><h3>${title}<span class="count${over ? ' over' : ''}">${l.length}/${LIMIT}</span></h3><p class="hint">${hint}</p><div class="chips">${r.map(n => chip(n, kind)).join('')}</div>${over ? `<div class="warn">${LIMIT}명을 초과했습니다. 뽑기 시작 시 ${l.length - LIMIT}명을 탈락시키는 뽑기를 먼저 진행합니다.</div>` : ''}</div>`;
+  };
+  return list('front', '앞자리 희망', '선택한 학생은 1·2행에 배정됩니다.') + list('back', '뒷자리 희망', '선택한 학생은 4·5행에 배정됩니다.') +
+    `<div class="card row"><div><div class="lbl">뽑기 효과</div><div class="sub">카운트다운과 효과음</div></div><button type="button" class="switch${S.effect ? ' on' : ''}" data-act="effect" aria-label="뽑기 효과"></button></div>
+    <button class="btn big" data-act="draw">자리 뽑기</button>
+    ${role === 'admin' ? '<button class="btn outline full" data-act="manual">자리 직접 배치</button>' : ''}
+    <div class="note">배정 인원 ${N}명 · 좌석 ${TOTAL}석${N > TOTAL ? `<br><span class="warn">좌석보다 ${N - TOTAL}명 많아 일부는 배정되지 않습니다.</span>` : ''}</div>`;
+}
+function postView() {
+  const c = S.current, m = c.meta || {};
+  return `<div class="card result"><h3>${m.manual ? '직접 배치 완료' : '뽑기 완료'}${c.saved ? '<span class="badge">저장됨</span>' : ''}</h3><div class="meta">${fmt(c.ts, true)}<br>앞자리 희망 <b>${m.front || 0}명</b> · 뒷자리 희망 <b>${m.back || 0}명</b> 반영</div></div>
+    <div class="card"><div class="grid2">
+      <button class="btn" data-act="save">자리판 저장</button>
+      <button class="btn outline" data-act="share">이미지로 공유</button>
+      <button class="btn gold" data-act="edit">${edit ? '편집 완료' : '자리 편집'}</button>
+      <button class="btn ghost" data-act="redraw">다시 뽑기</button>
+      ${role === 'admin' ? '<button class="btn outline" data-act="manual" style="grid-column:1/-1">이 결과를 바탕으로 직접 배치</button>' : ''}
+    </div></div>
+    ${edit ? '<div class="card editbox"><p><b>편집 모드</b> 자리 두 개를 차례로 클릭하면 서로 바뀝니다. 빈자리와도 바꿀 수 있습니다.</p><button class="btn gold sm" data-act="edit">편집 완료</button></div>' : ''}`;
+}
+function manualView() {
+  const placed = new Set(manual.assign.filter(Boolean)), all = roster(), left = all.filter(n => !placed.has(n));
+  const chips = left.map(n => { const nm = nameOf(n); return `<button type="button" class="chip${manual.pick === n ? ' picked' : ''}" data-pick="${n}" title="${esc(labelOf(n))}">${n}${nm ? `<small>${esc(nm)}</small>` : ''}</button>`; }).join('');
+  return `<div class="card result"><h3>자리 직접 배치</h3><div class="meta">학생을 선택한 뒤 자리를 클릭하면 배치됩니다. 배치된 자리를 클릭하면 비워집니다.<br>배치 <b>${placed.size}</b>/${all.length}명</div></div>
+    <div class="card"><h3>남은 학생<span class="count">${left.length}</span></h3><p class="hint">${manual.pick !== null ? `<b>${esc(labelOf(manual.pick))}</b> 선택됨 · 자리를 클릭하세요` : '배치할 학생을 선택하세요'}</p><div class="chips">${chips || '<div class="empty">모든 학생을 배치했습니다.</div>'}</div></div>
+    <div class="card"><div class="grid2">
+      <button class="btn" data-act="mdone">배치 완료</button>
+      <button class="btn ghost" data-act="mclear">비우기</button>
+      <button class="btn outline" data-act="mfill">남은 학생 무작위 채우기</button>
+      <button class="btn ghost" data-act="mcancel">취소</button>
+    </div></div>`;
+}
+function historyView() {
+  const h = S.history;
+  const items = h.length ? h.map((e, i) => `<div class="item"><div><b>${fmt(e.ts, true)}</b><span>앞 ${(e.front || []).length}명 · 뒤 ${(e.back || []).length}명 · ${e.assign.filter(Boolean).length}명 배정</span></div><div class="acts"><button class="btn sm outline" data-load="${i}">불러오기</button>${role === 'admin' ? `<button class="btn sm danger" data-del="${i}">삭제</button>` : ''}</div></div>`).join('') : '<div class="empty">저장된 자리판이 없습니다.</div>';
+  return `<div class="card"><h3>저장된 자리판<span class="count">${h.length}</span></h3><div class="list">${items}</div></div>`;
+}
+function info() {
+  $('info').innerHTML = manual ? manualView() : (S.current ? postView() : preView()) + historyView();
+}
+
+const ACT = {
+  effect() { S.effect = !S.effect; save(); info(); },
+  draw: runDraw,
+  manual() {
+    const base = S.current ? S.current.assign : [];
+    manual = { assign: Array.from({ length: TOTAL }, (_, i) => active(base[i]) ? base[i] : 0), pick: null };
+    edit = false; sel = null; board(); info();
+    toast('학생을 고른 뒤 자리를 클릭하면 배치됩니다');
+  },
+  save() {
+    const c = S.current; if (!c) return;
+    S.history.unshift({ ts: Date.now(), assign: c.assign.slice(), meta: { ...c.meta }, front: S.front.slice(), back: S.back.slice() });
+    S.history.length = Math.min(S.history.length, 20);
+    c.saved = true; save(); info(); adminHistory();
+    toast('자리판을 저장했습니다');
+  },
+  share: exportPNG,
+  edit() { edit = !edit; sel = null; board(); info(); if (edit) toast('자리 두 개를 차례로 클릭하면 서로 바뀝니다'); },
+  redraw() {
+    if (!S.current.saved && !confirm('저장하지 않은 결과입니다. 초기 화면으로 돌아갈까요?')) return;
+    S.current = null; edit = false; sel = null; save(); board(); info();
+  },
+  mdone() {
+    S.current = { assign: manual.assign.slice(), ts: Date.now(), saved: false, meta: { front: 0, back: 0, manual: true } };
+    manual = null; save(); board(); info();
+    toast('직접 배치한 자리판을 적용했습니다');
+  },
+  mclear() { manual.assign.fill(0); manual.pick = null; board(); info(); },
+  mfill() {
+    const placed = new Set(manual.assign.filter(Boolean));
+    const empties = shuffle(manual.assign.map((n, i) => n ? -1 : i).filter(i => i >= 0));
+    shuffle(roster().filter(n => !placed.has(n))).forEach((n, k) => { if (k < empties.length) manual.assign[empties[k]] = n; });
+    manual.pick = null; board(); info();
+  },
+  mcancel() { manual = null; board(); info(); }
+};
+function loadHistory(i) {
+  const e = S.history[i]; if (!e) return;
+  if (S.current && !S.current.saved && !confirm('저장하지 않은 결과입니다. 기록을 불러올까요?')) return;
+  S.front = (e.front || []).slice(); S.back = (e.back || []).slice();
+  S.current = { assign: e.assign.slice(), ts: e.ts, meta: { ...e.meta }, saved: true };
+  edit = false; sel = null; manual = null; save(); board(); info();
+  toast(`${fmt(e.ts)} 자리판을 불러왔습니다`);
+}
+function deleteHistory(i) {
+  if (!confirm('이 기록을 삭제할까요?')) return;
+  S.history.splice(i, 1); save(); info(); adminHistory();
+}
+
+/* ---------- draw flow ---------- */
+async function runDraw() {
+  if (busy) return;
+  busy = true;
+  if (S.effect) ensureAudio();
+  const b = $('info').querySelector('[data-act=draw]'); if (b) b.disabled = true;
+  try {
+    for (const kind of ['front', 'back']) if (S[kind].length > LIMIT) {
+      const out = await eliminate(kind);
+      S[kind] = S[kind].filter(n => !out.includes(n)); save(); info();
+    }
+    const r = compute();
+    if (r.violations > 0) { await showAlert(); info(); return; }
+    if (S.effect) await countdown();
+    S.current = { assign: r.assign, ts: Date.now(), saved: false, meta: r.meta };
+    save(); await reveal(); info();
+  } finally { busy = false; }
+}
+function chooseOut(kind, list, k) {
+  if (!rules().length) return shuffle(list).slice(0, k);
+  const keep = S[kind], out = [];
+  let rest = shuffle(list);
+  for (let i = 0; i < k; i++) {
+    let pick = rest[0], bestV = Infinity;
+    for (const n of rest) {
+      S[kind] = rest.filter(x => x !== n);
+      const v = compute(300).violations;
+      if (v < bestV) { bestV = v; pick = n; if (!v) break; }
+    }
+    out.push(pick); rest = rest.filter(x => x !== pick);
+  }
+  S[kind] = keep;
+  return out;
+}
+function eliminate(kind) {
+  return new Promise(resolve => {
+    const list = S[kind].slice(), k = list.length - LIMIT, out = chooseOut(kind, list, k);
+    $('elimTitle').textContent = kind === 'front' ? '앞자리 희망 탈락자 뽑기' : '뒷자리 희망 탈락자 뽑기';
+    $('elimSub').textContent = `${list.length}명이 희망해 ${LIMIT}명만 남길 수 있습니다. ${k}명을 무작위로 탈락시킵니다.`;
+    $('elimRes').textContent = '';
+    $('elimChips').innerHTML = list.map(n => `<div class="echip" data-n="${n}">${n}${nameOf(n) ? `<small>${esc(nameOf(n))}</small>` : ''}</div>`).join('');
+    const next = $('elimNext'); next.classList.add('hidden');
+    $('elim').classList.remove('hidden');
+    (async () => {
+      await sleep(700);
+      const done = [];
+      for (const n of out) { await spinTo(n); done.push(n); $('elimRes').textContent = `탈락: ${done.map(labelOf).join(', ')}`; }
+      await sleep(300); next.classList.remove('hidden'); next.focus();
+    })();
+    next.onclick = () => { $('elim').classList.add('hidden'); resolve(out); };
+  });
+}
+async function spinTo(target) {
+  const els = [...$('elimChips').children], alive = els.filter(e => !e.classList.contains('out'));
+  const targetEl = els.find(e => +e.dataset.n === target), L = alive.length;
+  const steps = 2 * L + alive.indexOf(targetEl) + 1;
+  for (let s = 0, idx = -1; s < steps; s++) {
+    alive.forEach(e => e.classList.remove('hot'));
+    idx = (idx + 1) % L; alive[idx].classList.add('hot');
+    const p = s / steps; beep(500 + p * 300, .04, 'square');
+    await sleep(45 + p * p * p * 320);
+  }
+  await sleep(350);
+  targetEl.classList.remove('hot'); targetEl.classList.add('out');
+  beep(180, .35, 'sawtooth');
+  await sleep(650);
+}
+function showAlert() {
+  return new Promise(resolve => {
+    $('alert').classList.remove('hidden');
+    $('alertOk').focus();
+    $('alertOk').onclick = () => { $('alert').classList.add('hidden'); resolve(); };
+  });
+}
+async function countdown() {
+  const ov = $('cd'), num = $('cdNum'), ring = $('cdRing'), app = $('app');
+  ov.classList.remove('hidden');
+  for (const n of [3, 2, 1]) {
+    num.className = 'cd-num' + (n === 1 ? ' last' : ''); ring.className = 'cd-ring';
+    void num.offsetWidth;
+    num.textContent = n; num.classList.add('pop'); ring.classList.add('ring');
+    app.classList.remove('shake'); void app.offsetWidth; app.classList.add('shake');
+    beep(n === 1 ? 880 : 440 + (3 - n) * 80, n === 1 ? .6 : .3);
+    await sleep(1000);
+  }
+  ov.classList.add('hidden'); app.classList.remove('shake');
+}
+
+/* ---------- PNG export ---------- */
+function exportPNG() {
+  const c = S.current; if (!c) return;
+  const cv = $('cv'), W = 2339, H = 1654; cv.width = W; cv.height = H;
+  const x = cv.getContext('2d');
+  const font = (w, s) => `${w} ${s}px "Malgun Gothic","Noto Sans KR",sans-serif`;
+  const rect = (px, py, w, h, r) => {
+    x.beginPath(); x.moveTo(px + r, py); x.arcTo(px + w, py, px + w, py + h, r); x.arcTo(px + w, py + h, px, py + h, r);
+    x.arcTo(px, py + h, px, py, r); x.arcTo(px, py, px + w, py, r); x.closePath();
+  };
+  const dot = (cx, cy, color) => { x.fillStyle = color; x.beginPath(); x.arc(cx, cy, 6, 0, Math.PI * 2); x.fill(); };
+  x.fillStyle = '#fff'; x.fillRect(0, 0, W, H);
+  x.fillStyle = '#f3f8fb'; x.fillRect(0, 0, W, 160);
+  x.textBaseline = 'middle'; x.textAlign = 'left';
+  x.fillStyle = '#21295c'; x.font = font(900, 58); x.fillText('자리 배치표', 100, 72);
+  x.fillStyle = '#5a6472'; x.font = font(500, 28); x.fillText(`뽑기 일시 ${fmt(c.ts, true)}`, 100, 124);
+  x.textAlign = 'right'; x.fillText('교탁 방향 ↑', W - 100, 124);
+  const sw = 321, sh = 218, pg = 10, sg = 90, rg = 26, secW = sw * 2 + pg, left = (W - (secW * 3 + sg * 2)) / 2;
+  let y = 200;
+  x.fillStyle = '#21295c'; rect(W / 2 - 170, y, 340, 56, 10); x.fill();
+  x.fillStyle = '#fff'; x.font = font(700, 28); x.textAlign = 'center'; x.fillText('교   탁', W / 2, y + 28);
+  y += 96;
+  x.font = font(700, 26); x.strokeStyle = '#d5e4ee'; x.lineWidth = 3;
+  for (let s = 0; s < 3; s++) {
+    const sx = left + s * (secW + sg);
+    x.fillStyle = '#1c7293'; x.fillText(`${s + 1}분단`, sx + secW / 2, y);
+    x.setLineDash([9, 9]); x.beginPath(); x.moveTo(sx, y + 26); x.lineTo(sx + secW, y + 26); x.stroke(); x.setLineDash([]);
+  }
+  y += 52;
+  const wf = new Set(S.front), wb = new Set(S.back);
+  for (let r = 0; r < ROWS; r++, y += sh + rg) for (let s = 0; s < 3; s++) for (const k of [0, 1]) {
+    const n = c.assign[r * COLS + s * 2 + k], sx = left + s * (secW + sg) + k * (sw + pg), cx = sx + sw / 2;
+    x.fillStyle = n ? '#fff' : '#f3f5f8'; x.strokeStyle = n ? '#1c7293' : '#d5e4ee';
+    rect(sx, y, sw, sh, 18); x.fill(); x.stroke();
+    if (!n) { x.fillStyle = '#a8b3bf'; x.font = font(500, 28); x.fillText('빈자리', cx, y + sh / 2); continue; }
+    const nm = nameOf(n);
+    x.fillStyle = '#21295c'; x.font = font(900, 84); x.fillText(n, cx, y + sh / 2 - (nm ? 26 : 0));
+    if (nm) { x.fillStyle = '#5a6472'; x.font = font(500, 36); x.fillText(nm, cx, y + sh / 2 + 54); }
+    if (wf.has(n) || wb.has(n)) dot(sx + sw - 26, y + 26, wf.has(n) ? '#1c7293' : '#ffc145');
+  }
+  x.textAlign = 'left'; x.font = font(500, 24);
+  dot(left + 10, y + 10, '#1c7293'); x.fillStyle = '#5a6472'; x.fillText('앞자리 희망', left + 30, y + 10);
+  dot(left + 210, y + 10, '#ffc145'); x.fillStyle = '#5a6472'; x.fillText('뒷자리 희망', left + 230, y + 10);
+  const d = new Date(c.ts);
+  shot.name = `자리배치_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.png`;
+  cv.toBlob(b => {
+    if (shot.url) URL.revokeObjectURL(shot.url);
+    shot.blob = b; shot.url = URL.createObjectURL(b);
+    $('shotImg').src = shot.url;
+    $('shot').classList.remove('hidden');
+  }, 'image/png');
+}
+const shot = { blob: null, url: null, name: '' };
+const shotFile = () => new File([shot.blob], shot.name, { type: 'image/png' });
+$('shareBtn').classList.toggle('hidden', !navigator.share);
+$('copyBtn').classList.toggle('hidden', !(navigator.clipboard && window.ClipboardItem));
+$('shareBtn').addEventListener('click', async () => {
+  const f = shotFile();
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [f] })) await navigator.share({ files: [f], title: '자리 배치표' });
+    else toast('이 브라우저는 이미지 공유를 지원하지 않습니다. 이미지 복사를 이용하세요');
+  } catch (e) { if (e.name !== 'AbortError') toast('공유하지 못했습니다. 이미지 복사를 이용하세요'); }
+});
+$('copyBtn').addEventListener('click', async () => {
+  try { await navigator.clipboard.write([new ClipboardItem({ 'image/png': shot.blob })]); toast('이미지를 복사했습니다. 메신저나 문서에 붙여넣으세요'); }
+  catch (e) { toast('복사하지 못했습니다. 이미지를 마우스 오른쪽 버튼으로 저장하세요'); }
+});
+$('dlBtn').addEventListener('click', () => {
+  const a = document.createElement('a'); a.href = shot.url; a.download = shot.name;
+  document.body.appendChild(a); a.click(); a.remove();
+});
+const closeShot = () => $('shot').classList.add('hidden');
+$('shotClose').addEventListener('click', closeShot);
+$('shot').addEventListener('click', e => { if (e.target === $('shot')) closeShot(); });
+
+/* ---------- admin ---------- */
+function adminRefresh() {
+  $('rosterCount').textContent = `배정 인원 ${roster().length}명`;
+  $('names').innerHTML = Array.from({ length: S.maxNo }, (_, k) => {
+    const n = k + 1, abs = S.absent.includes(n);
+    return `<label class="${abs ? 'absent' : ''}"><b>${n}</b><input type="text" data-n="${n}" maxlength="12" placeholder="${abs ? '결번' : '이름'}" value="${esc(nameOf(n))}"${abs ? ' disabled' : ''}><span class="abs"><input type="checkbox" data-abs="${n}"${abs ? ' checked' : ''}>결번</span></label>`;
+  }).join('');
+  const r = roster(), opts = r.map(opt).join('');
+  for (const id of ['ruleA', 'ruleB', 'fixStudent']) {
+    const el = $(id), v = +el.value; el.innerHTML = opts;
+    if (v && active(v)) el.value = v;
+  }
+  if (r.length > 1 && $('ruleA').value === $('ruleB').value) $('ruleB').value = r.find(n => n !== +$('ruleA').value);
+  $('ruleList').innerHTML = S.rules.length ? S.rules.map((x, i) => `<div class="item"><span><b style="display:inline">${esc(labelOf(x.a))}</b> × <b style="display:inline">${esc(labelOf(x.b))}</b><span class="tag">${RULE_LABEL[x.type]}</span>${active(x.a) && active(x.b) ? '' : '<span class="tag off">결번이라 미적용</span>'}</span><button class="btn sm danger" data-rule="${i}">삭제</button></div>`).join('') : '<div class="empty">추가된 규칙이 없습니다.</div>';
+  $('fixList').innerHTML = S.fixed.length ? S.fixed.map((f, i) => `<div class="item"><span><b style="display:inline">${esc(labelOf(f.n))}</b> → ${seatName(f.seat)}${active(f.n) ? '' : '<span class="tag off">결번이라 미적용</span>'}</span><button class="btn sm danger" data-fix="${i}">삭제</button></div>`).join('') : '<div class="empty">고정된 자리가 없습니다.</div>';
+  adminHistory();
+}
+function adminHistory() {
+  const el = $('adminHist');
+  el.innerHTML = S.history.length ? S.history.map((e, i) => `<div class="item"><div><b>${fmt(e.ts, true)}</b><span>${e.assign.filter(Boolean).length}명 배정</span></div><div class="acts"><button class="btn sm danger" data-del="${i}">삭제</button></div></div>`).join('') : '<div class="empty">저장된 기록이 없습니다.</div>';
+}
+const modal = $('adminModal');
+let artifactApi = null;
+function pubStatus() {
+  const el = $('pubStatus'); if (!el) return;
+  el.innerHTML = `${SYNC_ON ? '서버 설정' : '배포된 설정'} <b>${CFG.ver ? fmt(CFG.ver, true) : '없음'}</b>` + (S.cfgDirty ? ' · <span class="dirty">배포되지 않은 변경 있음</span>' : ' · 최신');
+}
+async function publishCfg() {
+  if (SYNC_ON) return publishServer();
+  if (!artifactApi) return;
+  const btn = $('pubBtn'); btn.disabled = true;
+  const cfg = { ver: Date.now(), maxNo: S.maxNo, absent: S.absent, names: S.names, rules: S.rules, fixed: S.fixed };
+  const json = JSON.stringify(cfg).replace(/</g, '\\u003c');
+  const html = SRC
+    .replace(/<script id="cfg" type="application\/json">[\s\S]*?<\/script>/, `<script id="cfg" type="application/json">${json}<\/script>`)
+    .replace(/^(<!DOCTYPE html>\n<html[^>]*?)\s+data-theme="[^"]*"/, '$1');
+  const prevVer = S.cfgVer, prevDirty = S.cfgDirty;
+  S.cfgVer = cfg.ver; S.cfgDirty = false; save();
+  try {
+    await artifactApi.publish(html);
+    toast('설정을 배포했습니다. 잠시 후 새 버전으로 열립니다');
+  } catch (e) {
+    const code = e && e.code;
+    if (code !== 'conflict') { S.cfgVer = prevVer; S.cfgDirty = prevDirty; save(); pubStatus(); }
+    if (code === 'not_writer' || code === 'not_granted') toast('이 계정은 배포 권한이 없습니다');
+    else if (code === 'rate_limited') toast('너무 자주 배포했습니다. 잠시 후 다시 시도하세요');
+    else if (code !== 'conflict') toast('배포하지 못했습니다 (' + (code || '알 수 없음') + ')');
+  } finally { btn.disabled = false; }
+}
+async function publishServer() {
+  const btn = $('pubBtn'); btn.disabled = true;
+  const cfg = { maxNo: S.maxNo, absent: S.absent, names: S.names, rules: S.rules, fixed: S.fixed };
+  try {
+    const r = await fetch(SYNC_URL, { method: 'POST', body: JSON.stringify({ action: 'set', pw: ADMIN_PW, cfg }) });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'fail');
+    CFG = { ...cfg, ver: j.ver }; S.cfgVer = j.ver; S.cfgDirty = false; save(); pubStatus();
+    toast('설정을 배포했습니다. 모든 기기에 바로 적용됩니다');
+  } catch (e) {
+    toast(e.message === 'bad_pw' ? '서버의 관리자 비밀번호와 다릅니다' : '배포하지 못했습니다. 인터넷 연결과 서버 주소를 확인하세요');
+  } finally { btn.disabled = false; }
+}
+async function syncFromServer() {
+  try {
+    const r = await fetch(SYNC_URL + (SYNC_URL.includes('?') ? '&' : '?') + 'action=get&t=' + Date.now(), { cache: 'no-store' });
+    const cfg = await r.json();
+    if (!cfg || typeof cfg.ver !== 'number') return;
+    const newer = cfg.ver > (CFG.ver || 0);
+    CFG = cfg;
+    if (applyCfg(cfg)) {
+      save(); board(); info();
+      if (!modal.classList.contains('hidden')) adminRefresh();
+      if (role === 'admin' && newer) toast('배포된 최신 설정을 받았습니다');
+    }
+    pubStatus();
+  } catch (e) {}
+}
+if (SYNC_ON) {
+  $('pubbar').classList.remove('hidden');
+  syncFromServer();
+} else if (window.claude && typeof claude.use === 'function') {
+  claude.use('artifact').then(api => { artifactApi = api; if (api) { $('pubbar').classList.remove('hidden'); pubStatus(); } }, () => {});
+}
+$('pubBtn').addEventListener('click', publishCfg);
+function openAdmin() { if (role !== 'admin') return; $('maxNo').value = S.maxNo; $('maxErr').textContent = ''; adminRefresh(); pubStatus(); $('adminModal').classList.remove('hidden'); if (SYNC_ON && !S.cfgDirty) syncFromServer(); }
+function closeAdmin() { $('adminModal').classList.add('hidden'); board(); info(); }
+
+let nameTimer;
+modal.addEventListener('click', e => {
+  if (e.target === modal) return closeAdmin();
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.dataset.tab) {
+    modal.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === t));
+    modal.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.dataset.panel === t.dataset.tab));
+  } else if (t.dataset.rule !== undefined) { S.rules.splice(+t.dataset.rule, 1); touch(); adminRefresh(); }
+  else if (t.dataset.fix !== undefined) { S.fixed.splice(+t.dataset.fix, 1); touch(); adminRefresh(); }
+  else if (t.dataset.del !== undefined) deleteHistory(+t.dataset.del);
+});
+$('adminClose').addEventListener('click', closeAdmin);
+$('maxApply').addEventListener('click', () => {
+  const v = parseInt($('maxNo').value, 10);
+  if (!v || v < 1 || v > 60) { $('maxErr').textContent = '1~60 사이로 입력하세요.'; return; }
+  $('maxErr').textContent = ''; S.maxNo = v;
+  for (const k of ['front', 'back', 'absent']) S[k] = S[k].filter(n => n <= v);
+  touch(); adminRefresh();
+  toast(`마지막 번호를 ${v}번으로 설정했습니다 (배정 인원 ${roster().length}명)`);
+});
+$('maxNo').addEventListener('keydown', e => { if (e.key === 'Enter') $('maxApply').click(); });
+$('names').addEventListener('input', e => {
+  const inp = e.target; if (!inp.dataset.n) return;
+  const n = +inp.dataset.n, v = inp.value.trim();
+  if (v) S.names[n] = v; else delete S.names[n];
+  clearTimeout(nameTimer); nameTimer = setTimeout(touch, 250);
+});
+$('names').addEventListener('change', e => {
+  const cb = e.target; if (!cb.dataset.abs) return;
+  const n = +cb.dataset.abs;
+  if (cb.checked) { if (!S.absent.includes(n)) S.absent.push(n); S.front = S.front.filter(x => x !== n); S.back = S.back.filter(x => x !== n); }
+  else S.absent = S.absent.filter(x => x !== n);
+  S.absent.sort((a, b) => a - b); touch(); adminRefresh();
+});
+$('ruleAdd').addEventListener('click', () => {
+  const A = +$('ruleA').value, B = +$('ruleB').value, err = $('ruleErr');
+  err.textContent = '';
+  if (!A || !B) return err.textContent = '두 학생을 선택하세요.';
+  if (A === B) return err.textContent = '서로 다른 학생을 선택하세요.';
+  if (S.rules.some(r => (r.a === A && r.b === B) || (r.a === B && r.b === A))) return err.textContent = '이미 등록된 조합입니다. 기존 규칙을 삭제한 뒤 추가하세요.';
+  S.rules.push({ a: A, b: B, type: $('ruleType').value }); touch(); adminRefresh();
+});
+$('fixAdd').addEventListener('click', () => {
+  const n = +$('fixStudent').value, err = $('fixErr');
+  const seat = (+$('fixRow').value - 1) * COLS + (+$('fixSec').value - 1) * 2 + +$('fixSide').value;
+  err.textContent = '';
+  if (!n) return err.textContent = '학생을 선택하세요.';
+  if (S.fixed.some(f => f.n === n)) return err.textContent = '이미 자리가 고정된 학생입니다. 기존 고정을 삭제한 뒤 추가하세요.';
+  if (S.fixed.some(f => f.seat === seat)) return err.textContent = `${seatName(seat)}에는 이미 다른 학생이 고정되어 있습니다.`;
+  S.fixed.push({ n, seat }); touch(); adminRefresh();
+});
+$('histClear').addEventListener('click', () => {
+  if (!S.history.length || !confirm('저장된 기록을 모두 삭제할까요? 되돌릴 수 없습니다.')) return;
+  S.history = []; save(); adminRefresh(); info();
+});
+
+/* ---------- events ---------- */
+$('board').addEventListener('click', e => { const s = e.target.closest('.seat'); if (s) seatClick(+s.dataset.i); });
+$('info').addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t) return;
+  const d = t.dataset;
+  if (d.kind) {
+    const n = +d.n, other = d.kind === 'front' ? 'back' : 'front';
+    S[other] = S[other].filter(x => x !== n);
+    S[d.kind] = S[d.kind].includes(n) ? S[d.kind].filter(x => x !== n) : [...S[d.kind], n].sort((a, b) => a - b);
+    save(); info(); board();
+  }
+  else if (d.pick) { manual.pick = manual.pick === +d.pick ? null : +d.pick; board(); info(); }
+  else if (d.load !== undefined) loadHistory(+d.load);
+  else if (d.del !== undefined) deleteHistory(+d.del);
+  else if (ACT[d.act]) ACT[d.act]();
+});
+$('fab').addEventListener('click', () => { S.rulesOn = S.rulesOn === false; save(); fab(); });
+function fab() { const f = $('fab'); f.classList.toggle('on', S.rulesOn !== false); f.classList.toggle('hidden', !role); }
+
+function enter(r) {
+  role = r; store.sset('sl_role', r);
+  $('login').classList.add('hidden'); $('app').classList.remove('hidden');
+  $('roleBadge').classList.toggle('hidden', r !== 'admin');
+  $('adminBtn').classList.toggle('hidden', r !== 'admin');
+  fab(); board(); info();
+}
+function login() {
+  const v = $('pw').value.trim(), err = $('loginErr');
+  if (!v) return err.textContent = '비밀번호를 입력하세요.';
+  if (v !== ADMIN_PW && v !== USER_PW) { err.textContent = '비밀번호가 올바르지 않습니다.'; $('pw').select(); return; }
+  err.textContent = ''; $('pw').value = '';
+  enter(v === ADMIN_PW ? 'admin' : 'user');
+}
+$('loginBtn').addEventListener('click', login);
+$('pw').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+$('adminBtn').addEventListener('click', openAdmin);
+$('logoutBtn').addEventListener('click', () => {
+  role = null; store.sset('sl_role', null);
+  edit = false; sel = null; manual = null;
+  fab(); $('app').classList.add('hidden'); $('login').classList.remove('hidden');
+  $('pw').value = ''; $('loginErr').textContent = '';
+  setTimeout(() => $('pw').focus(), 50);
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (!modal.classList.contains('hidden')) closeAdmin();
+  closeShot();
+});
+
+if (role === 'admin' || role === 'user') enter(role);
+else setTimeout(() => $('pw').focus(), 50);
+})();
+</script>
+</body>
+</html>
