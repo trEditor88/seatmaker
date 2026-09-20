@@ -414,7 +414,7 @@ function applyCfg(cfg) {
 }
 async function syncFromServer() {
   try {
-    const r = await fetch(SYNC_URL + '?action=get&t=' + Date.now(), { cache: 'no-store' });
+    const r = await fetch(SYNC_URL + '?action=get&pw=' + encodeURIComponent(store.sget('sl_pw') || '') + '&t=' + Date.now(), { cache: 'no-store' });
     const d = await r.json();
     if (!d || typeof d.ver !== 'number') return;
     serverVer = d.ver;
