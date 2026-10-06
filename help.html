@@ -4,10 +4,12 @@
 <title>자리 뽑기 사용 설명서</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css">
 <style>
-:root{--navy:#21295c;--teal:#1c7293;--deep:#065a82;--bg:#f3f8fb;--line:#d5e4ee;--tint:#eaf3f8;--coral:#e4572e;--coral-bg:#fdf0f0;--gold:#ffc145;--gold-bg:#fff4d6;--gray:#5a6472;--ink:#222}
+:root{--navy:#1D1D1F;--teal:#0066CC;--deep:#0066CC;--bg:#FFFFFF;--line:#E0E0E0;--tint:#F5F5F7;--coral:#C0392B;--coral-bg:rgba(192,57,43,.08);--gold:#0066CC;--gold-bg:rgba(0,102,204,.07);--gray:#6E6E73;--ink:#1D1D1F;--green:#15803D}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.7 "Malgun Gothic","맑은 고딕","Noto Sans KR","Apple SD Gothic Neo",sans-serif}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.7 "Pretendard","Apple SD Gothic Neo","Noto Sans KR",system-ui,-apple-system,sans-serif}
 .wrap{max-width:780px;margin:0 auto;padding:40px 24px 80px}
 h1,h2,h3{color:var(--navy);margin:0;text-wrap:balance}
 h1{font-size:28px}
@@ -22,12 +24,12 @@ li{margin-bottom:5px}
 .toc a{color:var(--teal);text-decoration:none}
 .toc a:hover{text-decoration:underline}
 kbd{display:inline-block;padding:1px 7px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;background:#fff;font-size:13px;font-weight:700;color:var(--navy)}
-.btn{display:inline-block;padding:1px 8px;border-radius:5px;background:var(--teal);color:#fff;font-size:13px;font-weight:700}
-.btn.gold{background:var(--gold);color:var(--navy)}
+.btn{display:inline-block;padding:1px 10px;border-radius:999px;background:var(--teal);color:#fff;font-size:13px;font-weight:700}
+.btn.gold{background:var(--ink);color:#fff}
 .btn.line{background:#fff;color:var(--teal);border:1px solid var(--teal)}
 .note{border-left:3px solid var(--teal);background:var(--tint);padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0;font-size:14px}
 .tip{border-left-color:var(--gold);background:var(--gold-bg)}
-.tip b:first-child{color:#8a5a00}
+.tip b:first-child{color:var(--ink)}
 .call{border-left-color:var(--coral);background:var(--coral-bg)}
 table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0 14px}
 th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -71,27 +73,27 @@ footer{margin-top:50px;font-size:12.5px;color:var(--gray);border-top:1px solid v
 <p>교실을 위에서 내려다본 모습입니다. 맨 위가 <b>교탁</b>이고, 그 아래로 1행부터 5행까지 내려갑니다. 두 자리씩 붙어 있는 묶음이 <b>분단</b>이고, 화면 왼쪽부터 1분단, 2분단, 3분단입니다. 뽑기 전에는 자리마다 분단 이름만 적혀 있고, 뽑고 나면 번호와 이름이 나타납니다.</p>
 <div class="fig">
 <svg viewBox="0 0 520 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="자리판 구조">
-<rect x="185" y="6" width="150" height="26" rx="5" fill="#21295c"/><text x="260" y="24" text-anchor="middle" fill="#fff" font-size="12" font-weight="700" letter-spacing="4">교탁</text>
-<g font-size="11" font-weight="700" fill="#1c7293" text-anchor="middle"><text x="95" y="56">1분단</text><text x="260" y="56">2분단</text><text x="425" y="56">3분단</text></g>
-<g fill="#fff" stroke="#d5e4ee">
-<rect x="50" y="64" width="42" height="28" rx="4" fill="#eaf3f8"/><rect x="98" y="64" width="42" height="28" rx="4" fill="#eaf3f8"/>
-<rect x="215" y="64" width="42" height="28" rx="4" fill="#eaf3f8"/><rect x="263" y="64" width="42" height="28" rx="4" fill="#eaf3f8"/>
-<rect x="380" y="64" width="42" height="28" rx="4" fill="#eaf3f8"/><rect x="428" y="64" width="42" height="28" rx="4" fill="#eaf3f8"/>
-<rect x="50" y="98" width="42" height="28" rx="4" fill="#eaf3f8"/><rect x="98" y="98" width="42" height="28" rx="4" fill="#eaf3f8"/>
-<rect x="215" y="98" width="42" height="28" rx="4" fill="#eaf3f8"/><rect x="263" y="98" width="42" height="28" rx="4" fill="#eaf3f8"/>
-<rect x="380" y="98" width="42" height="28" rx="4" fill="#eaf3f8"/><rect x="428" y="98" width="42" height="28" rx="4" fill="#eaf3f8"/>
+<rect x="185" y="6" width="150" height="26" rx="5" fill="#1D1D1F"/><text x="260" y="24" text-anchor="middle" fill="#fff" font-size="12" font-weight="700" letter-spacing="4">교탁</text>
+<g font-size="11" font-weight="700" fill="#0066CC" text-anchor="middle"><text x="95" y="56">1분단</text><text x="260" y="56">2분단</text><text x="425" y="56">3분단</text></g>
+<g fill="#fff" stroke="#E0E0E0">
+<rect x="50" y="64" width="42" height="28" rx="4" fill="#EBF3FB"/><rect x="98" y="64" width="42" height="28" rx="4" fill="#EBF3FB"/>
+<rect x="215" y="64" width="42" height="28" rx="4" fill="#EBF3FB"/><rect x="263" y="64" width="42" height="28" rx="4" fill="#EBF3FB"/>
+<rect x="380" y="64" width="42" height="28" rx="4" fill="#EBF3FB"/><rect x="428" y="64" width="42" height="28" rx="4" fill="#EBF3FB"/>
+<rect x="50" y="98" width="42" height="28" rx="4" fill="#EBF3FB"/><rect x="98" y="98" width="42" height="28" rx="4" fill="#EBF3FB"/>
+<rect x="215" y="98" width="42" height="28" rx="4" fill="#EBF3FB"/><rect x="263" y="98" width="42" height="28" rx="4" fill="#EBF3FB"/>
+<rect x="380" y="98" width="42" height="28" rx="4" fill="#EBF3FB"/><rect x="428" y="98" width="42" height="28" rx="4" fill="#EBF3FB"/>
 <rect x="50" y="132" width="42" height="28" rx="4"/><rect x="98" y="132" width="42" height="28" rx="4"/>
 <rect x="215" y="132" width="42" height="28" rx="4"/><rect x="263" y="132" width="42" height="28" rx="4"/>
 <rect x="380" y="132" width="42" height="28" rx="4"/><rect x="428" y="132" width="42" height="28" rx="4"/>
-<rect x="50" y="166" width="42" height="28" rx="4" fill="#f4f5f8"/><rect x="98" y="166" width="42" height="28" rx="4" fill="#f4f5f8"/>
-<rect x="215" y="166" width="42" height="28" rx="4" fill="#f4f5f8"/><rect x="263" y="166" width="42" height="28" rx="4" fill="#f4f5f8"/>
-<rect x="380" y="166" width="42" height="28" rx="4" fill="#f4f5f8"/><rect x="428" y="166" width="42" height="28" rx="4" fill="#f4f5f8"/>
-<rect x="50" y="200" width="42" height="28" rx="4" fill="#f4f5f8"/><rect x="98" y="200" width="42" height="28" rx="4" fill="#f4f5f8"/>
-<rect x="215" y="200" width="42" height="28" rx="4" fill="#f4f5f8"/><rect x="263" y="200" width="42" height="28" rx="4" fill="#f4f5f8"/>
-<rect x="380" y="200" width="42" height="28" rx="4" fill="#f4f5f8"/><rect x="428" y="200" width="42" height="28" rx="4" fill="#f4f5f8"/>
+<rect x="50" y="166" width="42" height="28" rx="4" fill="#EEF6F1"/><rect x="98" y="166" width="42" height="28" rx="4" fill="#EEF6F1"/>
+<rect x="215" y="166" width="42" height="28" rx="4" fill="#EEF6F1"/><rect x="263" y="166" width="42" height="28" rx="4" fill="#EEF6F1"/>
+<rect x="380" y="166" width="42" height="28" rx="4" fill="#EEF6F1"/><rect x="428" y="166" width="42" height="28" rx="4" fill="#EEF6F1"/>
+<rect x="50" y="200" width="42" height="28" rx="4" fill="#EEF6F1"/><rect x="98" y="200" width="42" height="28" rx="4" fill="#EEF6F1"/>
+<rect x="215" y="200" width="42" height="28" rx="4" fill="#EEF6F1"/><rect x="263" y="200" width="42" height="28" rx="4" fill="#EEF6F1"/>
+<rect x="380" y="200" width="42" height="28" rx="4" fill="#EEF6F1"/><rect x="428" y="200" width="42" height="28" rx="4" fill="#EEF6F1"/>
 </g>
-<g font-size="11" fill="#5a6472"><text x="8" y="82">1행</text><text x="8" y="116">2행</text><text x="8" y="150">3행</text><text x="8" y="184">4행</text><text x="8" y="218">5행</text></g>
-<g font-size="11" font-weight="700"><text x="488" y="100" fill="#1c7293">앞자리</text><text x="488" y="202" fill="#8a5a00">뒷자리</text></g>
+<g font-size="11" fill="#6E6E73"><text x="8" y="82">1행</text><text x="8" y="116">2행</text><text x="8" y="150">3행</text><text x="8" y="184">4행</text><text x="8" y="218">5행</text></g>
+<g font-size="11" font-weight="700"><text x="488" y="100" fill="#0066CC">앞자리</text><text x="488" y="202" fill="#15803D">뒷자리</text></g>
 </svg>
 <p>1·2행이 앞자리, 4·5행이 뒷자리입니다. 가운데 3행은 어느 쪽도 아닙니다.</p>
 </div>
@@ -101,14 +103,27 @@ footer{margin-top:50px;font-size:12.5px;color:var(--gray);border-top:1px solid v
 <h2 id="s3">3. 자리 뽑기, 이렇게 합니다</h2>
 <ol>
 <li><b>희망 체크</b> 앞자리를 원하는 사람은 앞자리 희망 목록에서 자기 번호를 누르고, 뒷자리를 원하는 사람은 뒷자리 희망 목록에서 누릅니다. 눌린 번호는 색이 칠해집니다. 한 사람은 한 목록에만 들어갈 수 있어서, 다른 목록에서 누르면 자동으로 옮겨집니다. 잘못 눌렀으면 한 번 더 누르면 풀립니다.</li>
-<li><b>인원 확인</b> 앞자리는 12석, 뒷자리도 12석입니다. 희망자가 12명을 넘으면 목록 위 숫자가 빨갛게 바뀝니다. 그대로 진행해도 되고, 뽑기를 시작하면 탈락자 뽑기를 먼저 합니다.</li>
+<li><b>인원 확인</b> 앞자리 희망은 최대 8명, 뒷자리 희망은 최대 12명까지 받습니다. 넘으면 목록 위 숫자가 빨갛게 바뀝니다. 그대로 진행해도 되고, 뽑기를 시작하면 탈락자 뽑기를 먼저 합니다.</li>
 <li><b>뽑기 효과</b> 스위치를 켜 두면 3·2·1 카운트다운과 효과음이 나옵니다. 조용히 하려면 끄면 됩니다.</li>
 <li><span class="btn">자리 뽑기</span>를 누릅니다.</li>
-<li><b>탈락자 뽑기</b> (12명을 넘었을 때만) 희망자 이름표 위로 불빛이 빙글빙글 돌다가 멈추면 그 사람이 탈락입니다. 탈락 인원만큼 반복된 뒤 <span class="btn">확인하고 계속</span>을 누르면 다음으로 넘어갑니다. 탈락해도 자리를 못 받는 것은 아니고, 나머지 자리 중에서 똑같이 뽑힙니다.</li>
+<li><b>탈락자 뽑기</b> (희망자가 정원을 넘었을 때만) 희망자 이름표 위로 불빛이 빙글빙글 돌다가 멈추면 그 사람이 탈락입니다. 탈락 인원만큼 반복된 뒤 <span class="btn">확인하고 계속</span>을 누르면 다음으로 넘어갑니다. 탈락해도 자리를 못 받는 것은 아니고, 나머지 자리 중에서 똑같이 뽑힙니다.</li>
 <li><b>카운트다운</b> 화면 가득 3, 2, 1이 나옵니다.</li>
-<li><b>결과 공개</b> 자리가 하나씩 열립니다. 앞자리 희망은 반드시 1·2행에, 뒷자리 희망은 반드시 4·5행에 들어가고, 나머지는 남은 자리에 무작위로 들어갑니다.</li>
+<li><b>결과 공개</b> 자리가 하나씩 열립니다. 앞자리 희망은 1·2행 <b>오른쪽부터 인원수만큼</b> 모여 앉고, 뒷자리 희망은 반드시 4·5행에 들어갑니다. 나머지는 남은 자리에 무작위로 들어갑니다.</li>
 </ol>
-<div class="note">자리 오른쪽 위의 작은 점은 희망이 반영됐다는 표시입니다. <span class="dot" style="background:#1c7293"></span>파란 점은 앞자리 희망, <span class="dot" style="background:#ffc145"></span>노란 점은 뒷자리 희망입니다.</div>
+<h3>앞자리 희망자는 어디에 앉나요?</h3>
+<p>희망자 수에 맞춰 오른쪽 위 구석부터 자리가 정해지고, 그 안에서 누가 어디 앉을지는 무작위입니다. 앞줄의 나머지 자리에는 다른 사람이 앉습니다.</p>
+<div class="tbl"><table>
+<tr><th style="width:130px">앞자리 희망 인원</th><th>앉는 자리 (열은 오른쪽부터 셉니다)</th></tr>
+<tr><td>1명</td><td>1행 1열</td></tr>
+<tr><td>2명</td><td>1행 1·2열</td></tr>
+<tr><td>3명</td><td>1행 1·2열, 2행 1열</td></tr>
+<tr><td>4명</td><td>1행 1~3열, 2행 1열</td></tr>
+<tr><td>5명</td><td>1행 1~3열, 2행 1·2열</td></tr>
+<tr><td>6명</td><td>1행 1~4열, 2행 1·2열</td></tr>
+<tr><td>7명</td><td>1행 1~4열, 2행 1~3열</td></tr>
+<tr><td>8명</td><td>1행 1~4열, 2행 1~4열</td></tr>
+</table></div>
+<div class="note">자리 오른쪽 위의 작은 점은 희망이 반영됐다는 표시입니다. <span class="dot" style="background:#0066CC"></span>파란 점은 앞자리 희망, <span class="dot" style="background:#15803D"></span>초록 점은 뒷자리 희망입니다.</div>
 <div class="note call">뽑기 도중 <b>"관리자 확인 필요"</b>라는 창이 뜨면 그 자리에서 멈추고 관리자를 부르세요. 확인을 눌러 창을 닫아도 되지만, 관리자가 살펴보기 전에는 다시 뽑아도 같은 창이 뜹니다.</div>
 
 <h2 id="s4">4. 뽑은 결과 다루기</h2>
@@ -146,7 +161,7 @@ footer{margin-top:50px;font-size:12.5px;color:var(--gray);border-top:1px solid v
 <ol>
 <li>비밀번호로 입장</li>
 <li>앞자리·뒷자리 희망 번호 체크</li>
-<li><span class="btn">자리 뽑기</span> 누르기 (12명 넘으면 탈락자 뽑기 → 카운트다운 → 결과)</li>
+<li><span class="btn">자리 뽑기</span> 누르기 (희망자가 정원을 넘으면 탈락자 뽑기 → 카운트다운 → 결과)</li>
 <li><span class="btn">자리판 저장</span> 누르기</li>
 <li>필요하면 자리 편집 후 다시 저장</li>
 </ol>

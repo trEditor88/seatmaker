@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>자리 뽑기</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230066CC'/%3E%3Cpath d='M11 6v10M21 6v10M11 10h10M9 16h14M11 16v10M21 16v10M11 22h10' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css">
 <style>
@@ -24,6 +25,11 @@ button{cursor:pointer}
 h1,h2,h3{margin:0;color:var(--ink);font-weight:600;letter-spacing:-0.01em}
 :focus-visible{outline:2px solid var(--blue-focus);outline-offset:2px}
 .hidden{display:none!important}
+/* 아이콘: 24 격자, 1.8 선, 둥근 끝 — 모두 currentColor */
+.ic{width:18px;height:18px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.btn.sm .ic{width:16px;height:16px}
+.mark .ic{width:62%;height:62%;stroke:#fff;stroke-width:2.2}
+.x .ic{width:18px;height:18px}
 
 /* 버튼 — 알약형, 눌림 scale(.98) */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:10px 22px;border:1px solid var(--blue);border-radius:var(--r-pill);background:var(--blue);color:var(--on-blue);font-weight:600;white-space:nowrap;transition:transform .15s ease,opacity .15s ease,background .15s ease}
@@ -52,8 +58,8 @@ input:focus,select:focus{outline:2px solid var(--blue-focus);outline-offset:-1px
 /* 로그인 */
 #login{background:var(--canvas);padding:32px 16px}
 .modal.login{border:0;padding:0;width:400px;max-height:none;overflow:visible}
-.mark{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:24%;background:var(--blue);font-size:22px;line-height:1;flex:none}
-.login .mark{width:56px;height:56px;font-size:30px;margin-bottom:20px}
+.mark{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:24%;background:var(--blue);flex:none}
+.login .mark{width:56px;height:56px;margin-bottom:20px}
 .login h1{font-size:clamp(2rem,6vw,2.5rem);font-weight:700;letter-spacing:-0.02em;line-height:1.2;margin-bottom:8px}
 .login p{margin:0 0 32px;color:var(--muted);font-size:1.0625rem}
 .login-form{background:var(--parchment);border-radius:var(--r-lg);padding:24px;display:flex;flex-direction:column;gap:12px}
@@ -66,7 +72,7 @@ input:focus,select:focus{outline:2px solid var(--blue-focus);outline-offset:-1px
 .app{max-width:1200px;margin:0 auto;padding:0 24px 64px}
 .top{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:12px;height:56px;margin:0 -24px 32px;padding:0 24px;background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(12px);backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--hairline)}
 .brand{display:flex;align-items:center;gap:10px}
-.brand .mark{width:32px;height:32px;font-size:18px}
+.brand .mark{width:32px;height:32px}
 .brand h1{font-size:1.125rem;font-weight:600}
 .right{display:flex;align-items:center;gap:8px}
 .badge{font-size:.75rem;font-weight:600;color:var(--blue);background:var(--blue-tint);padding:3px 10px;border-radius:var(--r-pill)}
@@ -218,6 +224,8 @@ input:focus,select:focus{outline:2px solid var(--blue-focus);outline-offset:-1px
   .app{padding:0 16px 48px}
   .top{margin:0 -16px 20px;padding:0 16px}
   .brand h1{font-size:1rem}
+  .top .btn .t{display:none}
+  .top .btn.sm{padding:6px 10px}
   .board-wrap{padding:20px 12px}
   .board{gap:8px 10px}
   .pair{gap:3px}
@@ -232,10 +240,29 @@ input:focus,select:focus{outline:2px solid var(--blue-focus);outline-offset:-1px
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-chair" viewBox="0 0 24 24"><path d="M8 3v9M16 3v9M8 7h8M6 12h12M8 12v9M16 12v9M8 17h8"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 16l-4-4 4-4"/><path d="M6 12h10"/></symbol>
+  <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M3 7h3c4 0 6 10 10 10h5"/><path d="M3 17h3c1.5 0 2.7-1.4 3.8-3.2M14.2 10.2C15.3 8.4 16.5 7 18 7h3"/><path d="M18 4l3 3-3 3"/><path d="M18 14l3 3-3 3"/></symbol>
+  <symbol id="i-move" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/><path d="M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4"/><path d="M8 20v-6h8v6"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></symbol>
+  <symbol id="i-open" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M8 11l4 4 4-4"/><path d="M5 20h14"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"/><circle cx="12" cy="10" r="2"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+</svg>
 
 <div class="overlay" id="login">
   <div class="modal login">
-    <div class="mark" aria-hidden="true">🪑</div>
+    <div class="mark" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-chair"/></svg></div>
     <h1>자리 뽑기</h1>
     <p>비밀번호를 입력하고 입장하세요</p>
     <div class="login-form">
@@ -248,11 +275,11 @@ input:focus,select:focus{outline:2px solid var(--blue-focus);outline-offset:-1px
 
 <div class="app hidden" id="app">
   <header class="top">
-    <div class="brand"><div class="mark" aria-hidden="true">🪑</div><h1>자리 뽑기</h1></div>
+    <div class="brand"><div class="mark" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-chair"/></svg></div><h1>자리 뽑기</h1></div>
     <div class="right">
       <span class="badge hidden" id="roleBadge">관리자</span>
-      <button class="btn outline sm hidden" id="adminBtn">설정</button>
-      <button class="btn ghost sm" id="logoutBtn">로그아웃</button>
+      <button class="btn outline sm hidden" id="adminBtn" aria-label="설정"><svg class="ic" aria-hidden="true"><use href="#i-settings"/></svg><span class="t">설정</span></button>
+      <button class="btn ghost sm" id="logoutBtn" aria-label="로그아웃"><svg class="ic" aria-hidden="true"><use href="#i-logout"/></svg><span class="t">로그아웃</span></button>
     </div>
   </header>
   <main class="layout">
@@ -267,7 +294,7 @@ input:focus,select:focus{outline:2px solid var(--blue-focus);outline-offset:-1px
 
 <div class="overlay hidden" id="adminModal">
   <div class="modal admin">
-    <div class="mhead"><h2>설정</h2><button class="x" id="adminClose" aria-label="닫기">✕</button></div>
+    <div class="mhead"><h2>설정</h2><button class="x" id="adminClose" aria-label="닫기"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button></div>
     <div class="pubbar hidden" id="pubbar"><span id="pubStatus"></span><button class="btn sm hidden" id="retryBtn">다시 저장</button></div>
     <div class="tabs">
       <button class="tab on" data-tab="students">학생</button>
@@ -295,7 +322,7 @@ input:focus,select:focus{outline:2px solid var(--blue-focus);outline-offset:-1px
           <option value="diag">짝(대각)으로 붙이기</option>
           <option value="apart">어떤 짝도 되지 않게</option>
         </select>
-        <button class="btn sm" id="ruleAdd">추가</button>
+        <button class="btn sm" id="ruleAdd"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>추가</button>
       </div>
       <div class="err" id="ruleErr"></div>
       <div class="list rules" id="ruleList"></div>
@@ -306,14 +333,14 @@ input:focus,select:focus{outline:2px solid var(--blue-focus);outline-offset:-1px
         <select id="fixSec"><option value="1">1분단</option><option value="2">2분단</option><option value="3">3분단</option></select>
         <select id="fixRow"><option value="1">1행</option><option value="2">2행</option><option value="3">3행</option><option value="4">4행</option><option value="5">5행</option></select>
         <select id="fixSide"><option value="0">왼쪽</option><option value="1">오른쪽</option></select>
-        <button class="btn sm" id="fixAdd">고정</button>
+        <button class="btn sm" id="fixAdd"><svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg>고정</button>
       </div>
       <div class="err" id="fixErr"></div>
       <div class="list rules" id="fixList"></div>
     </div>
     <div class="panel" data-panel="history">
       <div class="list" id="adminHist"></div>
-      <div style="margin-top:14px"><button class="btn danger sm" id="histClear">모든 기록 삭제</button></div>
+      <div style="margin-top:14px"><button class="btn danger sm" id="histClear"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg>모든 기록 삭제</button></div>
     </div>
   </div>
 </div>
@@ -336,12 +363,12 @@ input:focus,select:focus{outline:2px solid var(--blue-focus);outline-offset:-1px
 
 <div class="overlay hidden" id="shot">
   <div class="modal shot">
-    <div class="mhead"><h2>자리 배치표</h2><button class="x" id="shotClose" aria-label="닫기">✕</button></div>
+    <div class="mhead"><h2>자리 배치표</h2><button class="x" id="shotClose" aria-label="닫기"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button></div>
     <img id="shotImg" alt="자리 배치표">
     <div class="share">
-      <button class="btn" id="shareBtn">공유</button>
-      <button class="btn outline" id="copyBtn">이미지 복사</button>
-      <button class="btn outline" id="dlBtn">다운로드</button>
+      <button class="btn" id="shareBtn"><svg class="ic" aria-hidden="true"><use href="#i-share"/></svg>공유</button>
+      <button class="btn outline" id="copyBtn"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg>이미지 복사</button>
+      <button class="btn outline" id="dlBtn"><svg class="ic" aria-hidden="true"><use href="#i-download"/></svg>다운로드</button>
     </div>
     <p>A4 가로 크기 이미지입니다. 공유는 기기의 공유 창을 열고, 이미지 복사는 메신저나 문서에 바로 붙여넣을 수 있게 합니다.</p>
   </div>
@@ -359,7 +386,18 @@ input:focus,select:focus{outline:2px solid var(--blue-focus);outline-offset:-1px
 const SYNC_URL = 'https://seat-api.dawn-sea-4052.workers.dev';   // Cloudflare Worker (seat-lottery/worker, 2026-09-26 이전)
 const ADMIN_HASH = '58f80cb81ed4b05cedac165d4ab30fd9e307d17d0f142ca708dd999ab479b238';
 const USER_HASH = '2926a2731f4b312c08982cacf8061eb14bf65c1a87cc5d70e864e079c6220731';
-const KEY = 'seat_lottery_v3', ROWS = 5, COLS = 6, TOTAL = ROWS * COLS, LIMIT = 12, HISTORY_MAX = 20;
+const KEY = 'seat_lottery_v3', ROWS = 5, COLS = 6, TOTAL = ROWS * COLS, HISTORY_MAX = 20;
+const LIMITS = { front: 8, back: 12 };   // 앞자리 희망 최대 8명, 뒷자리 희망 최대 12명
+// 앞자리 희망자가 앉는 순서: 오른쪽 위(1행 1열)부터 1행이 한 칸 앞서고 2행이 따라감 (열은 오른쪽부터)
+// 1명 1행1 · 2명 1행1·2 · 3명 +2행1 · 4명 +1행3 · 5명 +2행2 · 6명 +1행4 · 7명 +2행3 · 8명 1행1~4·2행1~4
+// (고정 자리가 끼어 모자라면 5·6열 순으로 이어서 씀)
+const FRONT_ORDER = (() => {
+  const at = (r, k) => r * COLS + (COLS - 1 - k), o = [at(0, 0)];
+  let a = 1, b = 0;
+  while (a < 4 || b < 4) { if (a < 4) o.push(at(0, a++)); if (b < 4) o.push(at(1, b++)); }
+  for (let k = 4; k < COLS; k++) o.push(at(0, k), at(1, k));
+  return o;
+})();
 const FRONT = [0, 1], BACK = [3, 4];
 const NAMES = {
   2:'김도연', 3:'김서준', 4:'김서현', 5:'김세준', 6:'김연서', 7:'김예은', 8:'김윤', 9:'김진서', 10:'김하은',
@@ -370,6 +408,7 @@ const NAMES = {
 const RULE_LABEL = { side: '짝(좌우)', front: '짝(앞뒤)', diag: '짝(대각)', apart: '떨어뜨리기' };
 
 const $ = id => document.getElementById(id);
+const ic = n => `<svg class="ic" aria-hidden="true"><use href="#i-${n}"/></svg>`;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
 const pad = n => String(n).padStart(2, '0');
@@ -404,6 +443,8 @@ const active = n => n >= 1 && n <= S.maxNo && !S.absent.includes(n);
 const roster = () => { const r = []; for (let n = 1; n <= S.maxNo; n++) if (active(n)) r.push(n); return r; };
 const rules = () => S.rulesOn === false ? [] : S.rules.filter(r => active(r.a) && active(r.b));
 const fixedSeats = () => S.rulesOn === false ? [] : S.fixed.filter(f => active(f.n) && f.seat >= 0 && f.seat < TOTAL);
+// 희망 목록 중 실제로 희망 자리에 앉을 학생(결번·직접 배정 학생 제외) — 정원 비교·탈락자 뽑기 기준
+const wishes = kind => { const f = new Set(fixedSeats().map(x => x.n)); return S[kind].filter(n => active(n) && !f.has(n)); };
 const opt = n => `<option value="${n}">${esc(labelOf(n))}</option>`;
 
 let toastTimer;
@@ -518,18 +559,19 @@ function compute(trials) {
   }
   const front = S.front.filter(n => active(n) && !fxStu.has(n)), fs = new Set(front);
   const back = S.back.filter(n => active(n) && !fs.has(n) && !fxStu.has(n)), bs = new Set(back);
-  const pool = { front: [], back: [], '': [] };
-  for (let i = 0; i < TOTAL; i++) if (!fxSeat.has(i)) pool[zone(rc(i).r)].push(i);
+  const frontSeats = FRONT_ORDER.filter(i => !fxSeat.has(i)).slice(0, front.length), fseat = new Set(frontSeats);
+  const pool = { back: [], rest: [] };
+  for (let i = 0; i < TOTAL; i++) if (!fxSeat.has(i) && !fseat.has(i)) pool[zone(rc(i).r) === 'back' ? 'back' : 'rest'].push(i);
   const others = roster().filter(n => !fs.has(n) && !bs.has(n) && !fxStu.has(n));
   const rs = rules();
   let best = null, bestV = Infinity;
   for (let t = 0, max = rs.length ? (trials || 2500) : 1; t < max; t++) {
     const a = new Array(TOTAL).fill(0), extra = [];
     fx.forEach(f => { a[f.seat] = f.n; });
-    const pf = shuffle(pool.front), pb = shuffle(pool.back);
+    const pf = shuffle(frontSeats), pb = shuffle(pool.back);
     front.forEach(n => { const i = pf.pop(); if (i === undefined) extra.push(n); else a[i] = n; });
     back.forEach(n => { const i = pb.pop(); if (i === undefined) extra.push(n); else a[i] = n; });
-    const left = shuffle([...pf, ...pb, ...pool['']]);
+    const left = shuffle([...pf, ...pb, ...pool.rest]);
     shuffle([...others, ...extra]).forEach((n, k) => { if (k < left.length) a[left[k]] = n; });
     const v = violations(a, rs);
     if (v < bestV) { bestV = v; best = a; if (!v) break; }
@@ -591,26 +633,26 @@ const chip = (n, kind) => {
 function preView() {
   const r = roster(), N = r.length;
   const list = (kind, title, hint) => {
-    const l = S[kind], over = l.length > LIMIT;
-    return `<div class="card"><h3>${title}<span class="count${over ? ' over' : ''}">${l.length}/${LIMIT}</span></h3><p class="hint">${hint}</p><div class="chips">${r.map(n => chip(n, kind)).join('')}</div>${over ? `<div class="warn">${LIMIT}명을 초과했습니다. 뽑기 시작 시 ${l.length - LIMIT}명을 탈락시키는 뽑기를 먼저 진행합니다.</div>` : ''}</div>`;
+    const l = wishes(kind), max = LIMITS[kind], over = l.length > max;
+    return `<div class="card"><h3>${title}<span class="count${over ? ' over' : ''}">${l.length}/${max}</span></h3><p class="hint">${hint}</p><div class="chips">${r.map(n => chip(n, kind)).join('')}</div>${over ? `<div class="warn">${max}명을 초과했습니다. 뽑기 시작 시 ${l.length - max}명을 탈락시키는 뽑기를 먼저 진행합니다.</div>` : ''}</div>`;
   };
-  return list('front', '앞자리 희망', '선택한 학생은 1·2행에 배정됩니다.') + list('back', '뒷자리 희망', '선택한 학생은 4·5행에 배정됩니다.') +
+  return list('front', '앞자리 희망', '선택한 학생은 1·2행 오른쪽부터 모여 앉습니다.') + list('back', '뒷자리 희망', '선택한 학생은 4·5행에 배정됩니다.') +
     `<div class="card row"><div><div class="lbl">뽑기 효과</div><div class="sub">카운트다운과 효과음</div></div><button type="button" class="switch${S.effect ? ' on' : ''}" data-act="effect" aria-label="뽑기 효과"></button></div>
-    <button class="btn big" data-act="draw">자리 뽑기</button>
-    ${role === 'admin' ? '<button class="btn outline full" data-act="manual">자리 직접 배치</button>' : ''}
+    <button class="btn big" data-act="draw">${ic('shuffle')}자리 뽑기</button>
+    ${role === 'admin' ? `<button class="btn outline full" data-act="manual">${ic('move')}자리 직접 배치</button>` : ''}
     <div class="note">배정 인원 ${N}명 · 좌석 ${TOTAL}석${N > TOTAL ? `<br><span class="warn">좌석보다 ${N - TOTAL}명 많아 일부는 배정되지 않습니다.</span>` : ''}</div>`;
 }
 function postView() {
   const c = S.current, m = c.meta || {};
   return `<div class="card result"><h3>${m.manual ? '직접 배치 완료' : '뽑기 완료'}${c.saved ? '<span class="badge">저장됨</span>' : ''}</h3><div class="meta">${fmt(c.ts, true)}<br>앞자리 희망 <b>${m.front || 0}명</b> · 뒷자리 희망 <b>${m.back || 0}명</b> 반영</div></div>
     <div class="card"><div class="grid2">
-      <button class="btn" data-act="save">자리판 저장</button>
-      <button class="btn outline" data-act="share">이미지로 공유</button>
-      <button class="btn gold" data-act="edit">${edit ? '편집 완료' : '자리 편집'}</button>
-      <button class="btn ghost" data-act="redraw">다시 뽑기</button>
-      ${role === 'admin' ? '<button class="btn outline" data-act="manual" style="grid-column:1/-1">이 결과를 바탕으로 직접 배치</button>' : ''}
+      <button class="btn" data-act="save">${ic('save')}자리판 저장</button>
+      <button class="btn outline" data-act="share">${ic('share')}이미지로 공유</button>
+      <button class="btn gold" data-act="edit">${edit ? ic('check') + '편집 완료' : ic('edit') + '자리 편집'}</button>
+      <button class="btn ghost" data-act="redraw">${ic('redo')}다시 뽑기</button>
+      ${role === 'admin' ? `<button class="btn outline" data-act="manual" style="grid-column:1/-1">${ic('move')}이 결과를 바탕으로 직접 배치</button>` : ''}
     </div></div>
-    ${edit ? '<div class="card editbox"><p><b>편집 모드</b> 자리 두 개를 차례로 클릭하면 서로 바뀝니다. 빈자리와도 바꿀 수 있습니다.</p><button class="btn gold sm" data-act="edit">편집 완료</button></div>' : ''}`;
+    ${edit ? `<div class="card editbox"><p><b>편집 모드</b> 자리 두 개를 차례로 클릭하면 서로 바뀝니다. 빈자리와도 바꿀 수 있습니다.</p><button class="btn gold sm" data-act="edit">${ic('check')}편집 완료</button></div>` : ''}`;
 }
 function manualView() {
   const placed = new Set(manual.assign.filter(Boolean)), all = roster(), left = all.filter(n => !placed.has(n));
@@ -618,15 +660,15 @@ function manualView() {
   return `<div class="card result"><h3>자리 직접 배치</h3><div class="meta">학생을 선택한 뒤 자리를 클릭하면 배치됩니다. 배치된 자리를 클릭하면 비워집니다.<br>배치 <b>${placed.size}</b>/${all.length}명</div></div>
     <div class="card"><h3>남은 학생<span class="count">${left.length}</span></h3><p class="hint">${manual.pick !== null ? `<b>${esc(labelOf(manual.pick))}</b> 선택됨 · 자리를 클릭하세요` : '배치할 학생을 선택하세요'}</p><div class="chips">${chips || '<div class="empty">모든 학생을 배치했습니다.</div>'}</div></div>
     <div class="card"><div class="grid2">
-      <button class="btn" data-act="mdone">배치 완료</button>
-      <button class="btn ghost" data-act="mclear">비우기</button>
-      <button class="btn outline" data-act="mfill">남은 학생 무작위 채우기</button>
-      <button class="btn ghost" data-act="mcancel">취소</button>
+      <button class="btn" data-act="mdone">${ic('check')}배치 완료</button>
+      <button class="btn ghost" data-act="mclear">${ic('trash')}비우기</button>
+      <button class="btn outline" data-act="mfill">${ic('shuffle')}남은 학생 무작위 채우기</button>
+      <button class="btn ghost" data-act="mcancel">${ic('close')}취소</button>
     </div></div>`;
 }
 function historyView() {
   const h = S.history;
-  const items = h.length ? h.map((e, i) => `<div class="item"><div><b>${fmt(e.ts, true)}</b><span>앞 ${(e.front || []).length}명 · 뒤 ${(e.back || []).length}명 · ${e.assign.filter(Boolean).length}명 배정</span></div><div class="acts"><button class="btn sm outline" data-load="${i}">불러오기</button>${role === 'admin' ? `<button class="btn sm danger" data-del="${i}">삭제</button>` : ''}</div></div>`).join('') : '<div class="empty">저장된 자리판이 없습니다.</div>';
+  const items = h.length ? h.map((e, i) => `<div class="item"><div><b>${fmt(e.ts, true)}</b><span>앞 ${(e.front || []).length}명 · 뒤 ${(e.back || []).length}명 · ${e.assign.filter(Boolean).length}명 배정</span></div><div class="acts"><button class="btn sm outline" data-load="${i}">${ic('open')}불러오기</button>${role === 'admin' ? `<button class="btn sm danger" data-del="${i}">${ic('trash')}삭제</button>` : ''}</div></div>`).join('') : '<div class="empty">저장된 자리판이 없습니다.</div>';
   return `<div class="card"><h3>저장된 자리판<span class="count">${h.length}</span></h3><div class="list">${items}</div></div>`;
 }
 function info() {
@@ -692,7 +734,7 @@ async function runDraw() {
   if (S.effect) ensureAudio();
   const b = $('info').querySelector('[data-act=draw]'); if (b) b.disabled = true;
   try {
-    for (const kind of ['front', 'back']) if (S[kind].length > LIMIT) {
+    for (const kind of ['front', 'back']) if (wishes(kind).length > LIMITS[kind]) {
       const out = await eliminate(kind);
       S[kind] = S[kind].filter(n => !out.includes(n)); save(); info();
     }
@@ -721,9 +763,9 @@ function chooseOut(kind, list, k) {
 }
 function eliminate(kind) {
   return new Promise(resolve => {
-    const list = S[kind].slice(), k = list.length - LIMIT, out = chooseOut(kind, list, k);
+    const list = wishes(kind), k = list.length - LIMITS[kind], out = chooseOut(kind, list, k);
     $('elimTitle').textContent = kind === 'front' ? '앞자리 희망 탈락자 뽑기' : '뒷자리 희망 탈락자 뽑기';
-    $('elimSub').textContent = `${list.length}명이 희망해 ${LIMIT}명만 남길 수 있습니다. ${k}명을 무작위로 탈락시킵니다.`;
+    $('elimSub').textContent = `${list.length}명이 희망해 ${LIMITS[kind]}명만 남길 수 있습니다. ${k}명을 무작위로 탈락시킵니다.`;
     $('elimRes').textContent = '';
     $('elimChips').innerHTML = list.map(n => `<div class="echip" data-n="${n}">${n}${nameOf(n) ? `<small>${esc(nameOf(n))}</small>` : ''}</div>`).join('');
     const next = $('elimNext'); next.classList.add('hidden');
@@ -862,13 +904,13 @@ function adminRefresh() {
     if (v && active(v)) el.value = v;
   }
   if (r.length > 1 && $('ruleA').value === $('ruleB').value) $('ruleB').value = r.find(n => n !== +$('ruleA').value);
-  $('ruleList').innerHTML = S.rules.length ? S.rules.map((x, i) => `<div class="item"><span><b style="display:inline">${esc(labelOf(x.a))}</b> × <b style="display:inline">${esc(labelOf(x.b))}</b><span class="tag">${RULE_LABEL[x.type]}</span>${active(x.a) && active(x.b) ? '' : '<span class="tag off">결번이라 미적용</span>'}</span><button class="btn sm danger" data-rule="${i}">삭제</button></div>`).join('') : '<div class="empty">추가된 규칙이 없습니다.</div>';
-  $('fixList').innerHTML = S.fixed.length ? S.fixed.map((f, i) => `<div class="item"><span><b style="display:inline">${esc(labelOf(f.n))}</b> → ${seatName(f.seat)}${active(f.n) ? '' : '<span class="tag off">결번이라 미적용</span>'}</span><button class="btn sm danger" data-fix="${i}">삭제</button></div>`).join('') : '<div class="empty">고정된 자리가 없습니다.</div>';
+  $('ruleList').innerHTML = S.rules.length ? S.rules.map((x, i) => `<div class="item"><span><b style="display:inline">${esc(labelOf(x.a))}</b> × <b style="display:inline">${esc(labelOf(x.b))}</b><span class="tag">${RULE_LABEL[x.type]}</span>${active(x.a) && active(x.b) ? '' : '<span class="tag off">결번이라 미적용</span>'}</span><button class="btn sm danger" data-rule="${i}">${ic('trash')}삭제</button></div>`).join('') : '<div class="empty">추가된 규칙이 없습니다.</div>';
+  $('fixList').innerHTML = S.fixed.length ? S.fixed.map((f, i) => `<div class="item"><span><b style="display:inline">${esc(labelOf(f.n))}</b> → ${seatName(f.seat)}${active(f.n) ? '' : '<span class="tag off">결번이라 미적용</span>'}</span><button class="btn sm danger" data-fix="${i}">${ic('trash')}삭제</button></div>`).join('') : '<div class="empty">고정된 자리가 없습니다.</div>';
   adminHistory();
 }
 function adminHistory() {
   const el = $('adminHist');
-  el.innerHTML = S.history.length ? S.history.map((e, i) => `<div class="item"><div><b>${fmt(e.ts, true)}</b><span>${e.assign.filter(Boolean).length}명 배정</span></div><div class="acts"><button class="btn sm danger" data-del="${i}">삭제</button></div></div>`).join('') : '<div class="empty">저장된 기록이 없습니다.</div>';
+  el.innerHTML = S.history.length ? S.history.map((e, i) => `<div class="item"><div><b>${fmt(e.ts, true)}</b><span>${e.assign.filter(Boolean).length}명 배정</span></div><div class="acts"><button class="btn sm danger" data-del="${i}">${ic('trash')}삭제</button></div></div>`).join('') : '<div class="empty">저장된 기록이 없습니다.</div>';
 }
 function openAdmin() {
   if (role !== 'admin') return;
