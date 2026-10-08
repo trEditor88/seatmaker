@@ -62,6 +62,11 @@ input:focus,select:focus{outline:2px solid var(--blue-focus);outline-offset:-1px
 .login .mark{width:56px;height:56px;margin-bottom:20px}
 .login h1{font-size:clamp(2rem,6vw,2.5rem);font-weight:700;letter-spacing:-0.02em;line-height:1.2;margin-bottom:8px}
 .login p{margin:0 0 32px;color:var(--muted);font-size:1.0625rem}
+.reg-l{display:flex;flex-direction:column;gap:6px;text-align:left;font-weight:600;font-size:14px}
+.reg-l small{font-weight:400;opacity:.7}
+.reg-l input,.reg-l textarea{font:inherit;font-weight:400;font-size:16px;padding:10px 12px;border:1px solid #d2d2d7;border-radius:10px;background:#fff;color:inherit;width:100%;box-sizing:border-box}
+.reg-l textarea{resize:vertical;min-height:120px}
+a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
 .login-form{background:var(--parchment);border-radius:var(--r-lg);padding:24px;display:flex;flex-direction:column;gap:12px}
 .login input{width:100%;text-align:center;letter-spacing:.3em;font-size:1.125rem}
 .login .btn{width:100%}
@@ -264,11 +269,24 @@ input:focus,select:focus{outline:2px solid var(--blue-focus);outline-offset:-1px
   <div class="modal login">
     <div class="mark" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-chair"/></svg></div>
     <h1>자리 뽑기</h1>
-    <p>비밀번호를 입력하고 입장하세요</p>
+    <p>공유 계정으로 로그인하면 내 학급으로 자리를 뽑아요</p>
     <div class="login-form">
-      <input type="password" id="pw" placeholder="비밀번호" maxlength="30" autocomplete="off" aria-label="비밀번호">
-      <button class="btn" id="loginBtn">입장</button>
+      <a class="btn" id="loginBtn" href="https://heoworks.pages.dev/#login=seat">공유 계정으로 로그인</a>
       <div class="err" id="loginErr" role="alert"></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="reg" role="dialog" aria-modal="true" aria-labelledby="regTitle">
+  <div class="modal login">
+    <div class="mark" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-chair"/></svg></div>
+    <h1 id="regTitle">학급 정보 등록</h1>
+    <p>처음 한 번만 넣으면 돼요. 나중에 설정에서 바꿀 수 있어요.</p>
+    <div class="login-form">
+      <label class="reg-l">인원수<input type="number" id="regCount" min="1" max="30" inputmode="numeric" placeholder="예: 28"></label>
+      <label class="reg-l">학생 이름 <small>(선택 · 한 줄에 한 명, 1번부터 차례로)</small><textarea id="regNames" rows="6" placeholder="김하나&#10;이두리&#10;…"></textarea></label>
+      <button class="btn" id="regBtn">등록하고 시작</button>
+      <div class="err" id="regErr" role="alert"></div>
     </div>
   </div>
 </div>
@@ -383,10 +401,8 @@ input:focus,select:focus{outline:2px solid var(--blue-focus);outline-offset:-1px
 <script>
 (() => {
 'use strict';
-const SYNC_URL = 'https://seat-api.dawn-sea-4052.workers.dev';   // Cloudflare Worker (seat-lottery/worker, 2026-09-26 이전)
-const ADMIN_HASH = '58f80cb81ed4b05cedac165d4ab30fd9e307d17d0f142ca708dd999ab479b238';
-const USER_HASH = '2926a2731f4b312c08982cacf8061eb14bf65c1a87cc5d70e864e079c6220731';
-const KEY = 'seat_lottery_v3', ROWS = 5, COLS = 6, TOTAL = ROWS * COLS, HISTORY_MAX = 20;
+const SYNC_URL = (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && (() => { try { return localStorage.getItem('seat:api'); } catch (e) { return ''; } })()) || 'https://seat-api.dawn-sea-4052.workers.dev';   // 내 PC 에서 열 때만 'seat:api' 로 바꿔 시험   // Cloudflare Worker (seat-lottery/worker, 2026-09-26 이전)
+const KEY_BASE = 'seat_lottery_v4:', ROWS = 5, COLS = 6, TOTAL = ROWS * COLS, HISTORY_MAX = 20;
 const LIMITS = { front: 8, back: 12 };   // 앞자리 희망 최대 8명, 뒷자리 희망 최대 12명
 // 앞자리 희망자가 앉는 순서: 오른쪽 위(1행 1열)부터 1행이 한 칸 앞서고 2행이 따라감 (열은 오른쪽부터)
 // 1명 1행1 · 2명 1행1·2 · 3명 +2행1 · 4명 +1행3 · 5명 +2행2 · 6명 +1행4 · 7명 +2행3 · 8명 1행1~4·2행1~4
@@ -399,12 +415,7 @@ const FRONT_ORDER = (() => {
   return o;
 })();
 const FRONT = [0, 1], BACK = [3, 4];
-const NAMES = {
-  2:'김도연', 3:'김서준', 4:'김서현', 5:'김세준', 6:'김연서', 7:'김예은', 8:'김윤', 9:'김진서', 10:'김하은',
-  12:'문지유', 13:'박민수', 14:'박서윤', 15:'박지혁', 16:'박지후', 17:'서준성', 18:'유정원', 19:'윤지운',
-  20:'이민규', 21:'이서준', 22:'이인호', 23:'이초연', 24:'이호범', 25:'정광현', 26:'정명지', 27:'정예린',
-  28:'지은성', 29:'최수아', 30:'허원준', 31:'황시원', 32:'김지안', 33:'나윤서'
-};
+// 학급 명단은 계정마다 서버에 둔다(사이트 코드에 이름을 넣지 않음)
 const RULE_LABEL = { side: '짝(좌우)', front: '짝(앞뒤)', diag: '짝(대각)', apart: '떨어뜨리기' };
 
 const $ = id => document.getElementById(id);
@@ -417,10 +428,6 @@ const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 const rc = i => ({ r: Math.floor(i / COLS), c: i % COLS });
 const zone = r => FRONT.includes(r) ? 'front' : BACK.includes(r) ? 'back' : '';
 const seatName = i => { const p = rc(i); return `${Math.floor(p.c / 2) + 1}분단 ${p.r + 1}행 ${p.c % 2 ? '오른쪽' : '왼쪽'}`; };
-async function sha(s) {
-  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
-  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
-}
 
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
@@ -428,12 +435,17 @@ const store = {
   sget(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } },
   sset(k, v) { try { v == null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch (e) {} }
 };
-const S = (() => {
-  const base = { maxNo: 33, absent: [1, 11, 33], names: { ...NAMES }, rules: [], fixed: [], history: [], effect: true, rulesOn: true, front: [], back: [], current: null, cfgVer: 0, cfgDirty: false };
-  try { const p = JSON.parse(store.get(KEY)); if (p && typeof p === 'object') Object.assign(base, p); } catch (e) {}
-  return base;
-})();
-const save = () => store.set(KEY, JSON.stringify(S));
+// 이 기기에 남기는 상태도 계정마다 따로(같은 PC 를 여러 사람이 써도 섞이지 않게)
+const BASE = () => ({ maxNo: 30, absent: [], names: {}, rules: [], fixed: [], history: [], effect: true, rulesOn: true, front: [], back: [], current: null, cfgVer: 0, cfgDirty: false });
+const S = BASE();
+let KEY = '';
+function loadLocal(uid) {
+  KEY = uid ? KEY_BASE + uid : '';
+  for (const k of Object.keys(S)) delete S[k];
+  Object.assign(S, BASE());
+  if (KEY) try { const p = JSON.parse(store.get(KEY)); if (p && typeof p === 'object') Object.assign(S, p); } catch (e) {}
+}
+const save = () => { if (KEY) store.set(KEY, JSON.stringify(S)); };
 
 let role = store.sget('sl_role'), busy = false, edit = false, sel = null, manual = null, seats = [];
 
@@ -478,9 +490,12 @@ function beep(freq, dur, type = 'sine') {
 
 /* ---------- server sync ---------- */
 let serverVer = 0, syncState = 'idle', autosaveTimer = null;
+// 입장 증명: 공유 계정 로그인 토큰(sl_tok, 이 탭에만)
+const cred = () => ({ token: store.sget('sl_tok') || '' });
 async function api(body) {
-  const r = await fetch(SYNC_URL, { method: 'POST', body: JSON.stringify({ ...body, pw: store.sget('sl_pw') || '' }) });
+  const r = await fetch(SYNC_URL, { method: 'POST', body: JSON.stringify({ ...body, ...cred() }) });
   const j = await r.json();
+  if (j.error === 'need_login') { signedOut('로그인이 끝났습니다. 다시 로그인해 주세요.'); throw new Error('need_login'); }
   if (!j.ok) throw new Error(j.error || 'fail');
   return j;
 }
@@ -493,9 +508,11 @@ function applyCfg(cfg) {
 }
 async function syncFromServer() {
   try {
-    const r = await fetch(SYNC_URL + '?action=get&pw=' + encodeURIComponent(store.sget('sl_pw') || '') + '&t=' + Date.now(), { cache: 'no-store' });
+    const r = await fetch(SYNC_URL, { method: 'POST', body: JSON.stringify({ action: 'get', ...cred() }), cache: 'no-store' });
     const d = await r.json();
+    if (d && d.error === 'need_login') return signedOut('로그인이 끝났습니다. 다시 로그인해 주세요.');
     if (!d || typeof d.ver !== 'number') return;
+    if (!d.registered && !S.cfgDirty) openReg();
     serverVer = d.ver;
     if (Array.isArray(d.history)) S.history = d.history;
     const changed = applyCfg(d);
@@ -516,14 +533,14 @@ async function autosave() {
     const j = await api({ action: 'set', cfg: { maxNo: S.maxNo, absent: S.absent, names: S.names, rules: S.rules, fixed: S.fixed } });
     S.cfgVer = serverVer = j.ver; S.cfgDirty = false; syncState = 'saved'; save();
   } catch (e) {
-    syncState = e.message === 'bad_pw' ? 'badpw' : 'error';
+    syncState = e.message === 'need_login' ? 'badpw' : 'error';
   }
   pubStatus();
 }
 function pubStatus() {
   const el = $('pubStatus'); if (!el) return;
   const when = S.cfgVer ? fmt(S.cfgVer, true) : '없음';
-  const msg = { pending: '<span class="dirty">저장 대기 중</span>', saving: '<span class="dirty">서버에 저장 중…</span>', error: '<span class="dirty">저장 실패 · 인터넷 연결을 확인하세요</span>', badpw: '<span class="dirty">저장 실패 · 서버 비밀번호가 다릅니다</span>' }[syncState] || (S.cfgDirty ? '<span class="dirty">저장되지 않은 변경 있음</span>' : '모든 기기에 적용됨');
+  const msg = { pending: '<span class="dirty">저장 대기 중</span>', saving: '<span class="dirty">서버에 저장 중…</span>', error: '<span class="dirty">저장 실패 · 인터넷 연결을 확인하세요</span>', badpw: '<span class="dirty">저장 실패 · 다시 로그인해 주세요</span>' }[syncState] || (S.cfgDirty ? '<span class="dirty">저장되지 않은 변경 있음</span>' : '모든 기기에 적용됨');
   el.innerHTML = `서버 설정 <b>${when}</b> · ${msg}`;
   $('retryBtn').classList.toggle('hidden', !(syncState === 'error' || syncState === 'badpw'));
 }
@@ -997,32 +1014,39 @@ $('info').addEventListener('click', e => {
 $('fab').addEventListener('click', () => { S.rulesOn = S.rulesOn === false; save(); fab(); });
 function fab() { const f = $('fab'); f.classList.toggle('on', S.rulesOn !== false); f.classList.toggle('hidden', !role); }
 
-function enter(r) {
-  role = r; store.sset('sl_role', r);
+// 로그인한 계정은 자기 학급의 관리자(설정·직접 배치). 공유 계정 관리자는 포털에서 다른 학급도 고침
+function enter(name) {
+  role = 'admin'; store.sset('sl_role', role);
   $('login').classList.add('hidden'); $('app').classList.remove('hidden');
-  $('roleBadge').classList.toggle('hidden', r !== 'admin');
-  $('adminBtn').classList.toggle('hidden', r !== 'admin');
+  $('roleBadge').textContent = name || store.sget('sl_name') || ''; $('roleBadge').classList.toggle('hidden', !$('roleBadge').textContent);
+  $('adminBtn').classList.remove('hidden');
   fab(); board(); info(); syncFromServer();
 }
-async function login() {
-  const v = $('pw').value.trim(), err = $('loginErr');
-  if (!v) return err.textContent = '비밀번호를 입력하세요.';
-  let h = '';
-  try { h = await sha(v); } catch (e) { err.textContent = '이 브라우저에서는 로그인할 수 없습니다.'; return; }
-  const r = h === ADMIN_HASH ? 'admin' : h === USER_HASH ? 'user' : null;
-  if (!r) { err.textContent = '비밀번호가 올바르지 않습니다.'; $('pw').select(); return; }
-  err.textContent = ''; $('pw').value = ''; store.sset('sl_pw', v);
-  enter(r);
+function signedOut(msg) {
+  role = null; ['sl_role', 'sl_tok', 'sl_uid', 'sl_name', 'sl_pw'].forEach(k => store.sset(k, null));
+  edit = false; sel = null; manual = null; loadLocal('');
+  fab(); $('app').classList.add('hidden'); $('reg').classList.add('hidden'); modal.classList.add('hidden'); $('login').classList.remove('hidden');
+  $('loginErr').textContent = msg || '';
 }
-$('loginBtn').addEventListener('click', login);
-$('pw').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+function openReg() {
+  $('regCount').value = ''; $('regNames').value = ''; $('regErr').textContent = '';
+  $('reg').classList.remove('hidden'); setTimeout(() => $('regCount').focus(), 50);
+}
+$('regBtn').addEventListener('click', () => {
+  const n = parseInt($('regCount').value, 10), err = $('regErr');
+  if (!n || n < 1 || n > TOTAL) return err.textContent = `인원수는 1~${TOTAL}명으로 넣어 주세요.`;
+  const lines = $('regNames').value.split('\n').map(x => x.trim()).filter(Boolean);
+  if (lines.length > n) return err.textContent = `이름이 인원수(${n}명)보다 많아요.`;
+  S.maxNo = n; S.absent = []; S.names = {}; S.rules = []; S.fixed = []; S.front = []; S.back = []; S.current = null;
+  lines.forEach((v, k) => { S.names[k + 1] = v.slice(0, 12); });
+  $('reg').classList.add('hidden'); touch(); board(); info();
+  toast(`${n}명 학급을 등록했습니다. 설정에서 결번·규칙을 더 정할 수 있어요`);
+});
+$('regCount').addEventListener('keydown', e => { if (e.key === 'Enter') $('regNames').focus(); });
 $('adminBtn').addEventListener('click', openAdmin);
 $('logoutBtn').addEventListener('click', () => {
-  role = null; store.sset('sl_role', null); store.sset('sl_pw', null);
-  edit = false; sel = null; manual = null;
-  fab(); $('app').classList.add('hidden'); $('login').classList.remove('hidden');
-  $('pw').value = ''; $('loginErr').textContent = '';
-  setTimeout(() => $('pw').focus(), 50);
+  if (store.sget('sl_tok')) fetch(SYNC_URL, { method: 'POST', body: JSON.stringify({ action: 'logout', ...cred() }) }).catch(() => {});
+  signedOut('');
 });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
@@ -1030,8 +1054,17 @@ document.addEventListener('keydown', e => {
   closeShot();
 });
 
-if ((role === 'admin' || role === 'user') && store.sget('sl_pw')) enter(role);
-else { role = null; store.sset('sl_role', null); setTimeout(() => $('pw').focus(), 50); }
+// 공유 계정 포털(HEO Works)에서 열면 주소의 일회용 코드(#sso=…)로 들어온다. 코드는 바로 주소에서 지운다
+const sso = (location.hash.match(/[#&]sso=([A-Za-z0-9]{40})/) || [])[1];
+const resume = () => { if (store.sget('sl_tok') && store.sget('sl_uid')) { loadLocal(store.sget('sl_uid')); enter(); } else signedOut(''); };
+if (sso) {
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  fetch(SYNC_URL, { method: 'POST', body: JSON.stringify({ action: 'ssoLogin', code: sso }) }).then(r => r.json()).catch(() => ({ ok: false })).then(j => {
+    if (!j.ok) { resume(); if (!store.sget('sl_tok')) $('loginErr').textContent = '로그인 코드가 만료됐습니다. 다시 로그인해 주세요.'; return; }
+    store.sset('sl_tok', j.token); store.sset('sl_uid', j.user.uid); store.sset('sl_name', j.user.name);
+    loadLocal(j.user.uid); enter(j.user.name); toast(j.user.name + ' 님의 학급으로 들어왔습니다');
+  });
+} else resume();
 })();
 </script>
 </body>
