@@ -193,6 +193,21 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 .pubbar b{color:var(--ink);font-weight:600}
 .pubbar .dirty{color:var(--red);font-weight:600}
 .rules{margin-top:12px}
+/* 규칙 탭 자리 직접 배정: 작은 자리판 + 남은 학생 */
+.fixwrap{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;align-items:start}
+.mini{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 12px;background:var(--parchment);border-radius:var(--r-md);padding:14px}
+.mini .podium{grid-column:1/-1;margin:0 auto 4px;width:120px;padding:4px 0;font-size:.75rem}
+.mini .seat{aspect-ratio:auto;min-height:44px;border-radius:var(--r-sm)}
+.mini .seat .no{font-size:1rem}
+.mini .seat .nm{font-size:.625rem}
+.mini .seat.fx{border-color:var(--blue);background:var(--blue-tint)}
+.mini .seat.fx.off{border-color:var(--red);background:var(--red-tint)}
+.dnd-ghost.seat.fx{border-color:var(--blue);background:var(--blue-tint)}
+.dnd-ghost.seat.fx .no{font-size:1rem}
+.dnd-ghost.seat.fx .nm{font-size:.625rem}
+.fixpool{border:1px solid var(--hairline);border-radius:var(--r-md);padding:12px}
+.fixpool .hint{font-size:.8125rem;color:var(--muted);margin:0 0 8px}
+.fixpool .chips{grid-template-columns:repeat(4,1fr);max-height:300px;overflow-y:auto}
 
 /* 탈락자 뽑기 */
 .elim{width:640px;text-align:center}
@@ -249,6 +264,9 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
   .seat .nm{font-size:.6875rem}
   .chips{grid-template-columns:repeat(5,1fr)}
   .names{grid-template-columns:1fr 1fr}
+  .fixwrap{grid-template-columns:1fr}
+  .mini{gap:5px 8px;padding:10px}
+  .fixpool .chips{grid-template-columns:repeat(5,1fr);max-height:none}
   .modal{padding:20px}
 }
 @media(prefers-reduced-motion:reduce){.seat,.seat.dealt,.seat.swap,.cd-num.pop,.cd-ring.ring,.app.shake,.echip.out,.btn{animation:none;transition:none}}
@@ -355,15 +373,11 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
       <div class="err" id="ruleErr"></div>
       <div class="list rules" id="ruleList"></div>
       <h3 class="subh">자리 직접 배정</h3>
-      <div class="def">지정한 학생을 정해진 자리에 고정합니다. 앞·뒷자리 희망보다 우선 적용됩니다.</div>
-      <div class="frow">
-        <select id="fixStudent"></select>
-        <select id="fixSec"><option value="1">1분단</option><option value="2">2분단</option><option value="3">3분단</option></select>
-        <select id="fixRow"><option value="1">1행</option><option value="2">2행</option><option value="3">3행</option><option value="4">4행</option><option value="5">5행</option></select>
-        <select id="fixSide"><option value="0">왼쪽</option><option value="1">오른쪽</option></select>
-        <button class="btn sm" id="fixAdd"><svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg>고정</button>
+      <div class="def">지정한 학생을 정해진 자리에 고정합니다. 앞·뒷자리 희망보다 우선 적용됩니다.<br>학생을 자리로 <b>끌어다 놓으면</b> 고정됩니다. 자리끼리 끌면 서로 바뀌고, 자리를 '남은 학생' 칸으로 끌면 고정이 풀립니다. (학생 선택 → 자리 클릭도 됩니다)</div>
+      <div class="fixwrap">
+        <div class="mini" id="fixBoard"></div>
+        <div class="fixpool" id="fixPool"><p class="hint" id="fixHint"></p><div class="chips" id="fixChips"></div></div>
       </div>
-      <div class="err" id="fixErr"></div>
       <div class="list rules" id="fixList"></div>
     </div>
     <div class="panel" data-panel="history">
@@ -644,6 +658,7 @@ function seatClick(i) {
 }
 /* 끌어 놓기: 남은 학생 → 자리(배치), 자리 → 자리(맞바꿈), 자리 → 남은 학생 칸(비우기) */
 function dropTo(src, dst) {
+  if (src.fix) return fixDrop(src, dst);
   if (manual) {
     const a = manual.assign;
     if (src.chip) { if (dst.seat === undefined) return; const p = a.indexOf(src.chip); if (p >= 0) a[p] = 0; a[dst.seat] = src.chip; }
@@ -662,25 +677,34 @@ function dropTo(src, dst) {
 let drag = null, swallow = false;
 function dropAt(x, y, src) {
   const el = document.elementFromPoint(x, y); if (!el) return null;
+  if (src.fix) {
+    const f = el.closest('#fixBoard .seat');
+    if (f) return { el: f, seat: +f.dataset.f };
+    const p = src.seat !== undefined && el.closest('#fixPool');
+    return p ? { el: p, left: true } : null;
+  }
   const s = el.closest('#board .seat');
   if (s) return { el: s, seat: +s.dataset.i };
-  const z = manual && src.seat !== undefined && el.closest('.dropzone');
+  const z = manual && src.seat !== undefined && el.closest('#info .dropzone');
   return z ? { el: z, left: true } : null;
 }
 // 마우스는 6px 움직이면 바로 끌기. 터치는 0.25초 꾹 누른 뒤에만(그냥 밀면 화면 스크롤)
 document.addEventListener('pointerdown', e => {
   if (drag || !e.isPrimary) return;   // 두 번째 손가락은 무시
   swallow = false;
-  if (e.button || (!manual && !edit)) return;
-  const el = e.target.closest('#board .seat.drag, #info .chip[data-pick]'); if (!el) return;
+  if (e.button) return;
+  const el = e.target.closest('#board .seat.drag, #info .chip[data-pick], #fixBoard .seat.drag, #fixChips .chip[data-fpick]'); if (!el) return;
+  const fx = el.dataset.f !== undefined || el.dataset.fpick !== undefined;   // 설정 > 규칙 탭의 자리 고정
+  if (!fx && !manual && !edit) return;
   drag = { el, id: e.pointerId, touch: e.pointerType !== 'mouse', x: e.clientX, y: e.clientY, cx: e.clientX, cy: e.clientY, on: false, over: null,
-    src: el.dataset.pick ? { chip: +el.dataset.pick } : { seat: +el.dataset.i } };
+    src: fx ? (el.dataset.fpick ? { fix: 1, chip: +el.dataset.fpick } : { fix: 1, seat: +el.dataset.f })
+      : el.dataset.pick ? { chip: +el.dataset.pick } : { seat: +el.dataset.i } };
   if (drag.touch) drag.timer = setTimeout(startDrag, 250);
 });
 function startDrag() {
   const r = drag.el.getBoundingClientRect(), g = drag.el.cloneNode(true);
   g.classList.add('dnd-ghost'); g.classList.remove('click', 'sel', 'target', 'swap', 'dealt', 'lift');
-  g.style.width = r.width + 'px'; g.style.height = r.height + 'px';
+  g.style.width = r.width + 'px'; g.style.height = r.height + 'px'; g.style.minHeight = '0';
   g.style.left = drag.cx + 'px'; g.style.top = drag.cy + 'px';
   document.body.appendChild(g); drag.ghost = g; drag.on = true; drag.el.classList.add('lift');
   if (drag.touch && navigator.vibrate) try { navigator.vibrate(15); } catch (e) {}
@@ -710,7 +734,7 @@ function dragOver() {
 function autoScroll() {
   if (!drag || !drag.on || !drag.touch) return;
   const m = 70, y = drag.cy, v = y < m ? -(m - y) / 4 - 4 : y > innerHeight - m ? (y - innerHeight + m) / 4 + 4 : 0;
-  if (v) { scrollBy(0, v); dragOver(); }
+  if (v) { (drag.src.fix ? modal.querySelector('.modal') : window).scrollBy(0, v); dragOver(); }
   drag.raf = requestAnimationFrame(autoScroll);
 }
 function endDrag(e, ok) {
@@ -719,8 +743,8 @@ function endDrag(e, ok) {
   if (!d.on) return;
   cancelAnimationFrame(d.raf); d.ghost.remove(); d.el.classList.remove('lift'); if (d.over) d.over.classList.remove('over');
   const t = ok && dropAt(e.clientX, e.clientY, d.src);
-  // 제자리에 놓으면 보통 클릭으로 처리, 아니면 따라오는 click 한 번을 삼킴(키보드 클릭이 먹히지 않게 잠깐만)
-  if (!(t && t.seat !== undefined && t.seat === d.src.seat)) { swallow = true; setTimeout(() => { swallow = false; }, 300); }
+  // 편집 모드에서 제자리에 놓으면 보통 클릭(선택)으로 처리, 아니면 따라오는 click 한 번을 삼킴(배치·고정 칸 클릭은 비우기라서. 키보드 클릭이 먹히지 않게 잠깐만)
+  if (!(edit && !d.src.fix && t && t.seat !== undefined && t.seat === d.src.seat)) { swallow = true; setTimeout(() => { swallow = false; }, 300); }
   if (t) dropTo(d.src, t);
 }
 document.addEventListener('pointerup', e => endDrag(e, true));
@@ -1011,15 +1035,62 @@ function adminRefresh() {
     return `<label class="${abs ? 'absent' : ''}"><b>${n}</b><input type="text" data-n="${n}" maxlength="12" placeholder="${abs ? '결번' : '이름'}" value="${esc(nameOf(n))}"${abs ? ' disabled' : ''}><span class="abs"><input type="checkbox" data-abs="${n}"${abs ? ' checked' : ''}>결번</span></label>`;
   }).join('');
   const r = roster(), opts = r.map(opt).join('');
-  for (const id of ['ruleA', 'ruleB', 'fixStudent']) {
+  for (const id of ['ruleA', 'ruleB']) {
     const el = $(id), v = +el.value; el.innerHTML = opts;
     if (v && active(v)) el.value = v;
   }
   if (r.length > 1 && $('ruleA').value === $('ruleB').value) $('ruleB').value = r.find(n => n !== +$('ruleA').value);
   $('ruleList').innerHTML = S.rules.length ? S.rules.map((x, i) => `<div class="item"><span><b style="display:inline">${esc(labelOf(x.a))}</b> × <b style="display:inline">${esc(labelOf(x.b))}</b><span class="tag">${RULE_LABEL[x.type]}</span>${active(x.a) && active(x.b) ? '' : '<span class="tag off">결번이라 미적용</span>'}</span><button class="btn sm danger" data-rule="${i}">${ic('trash')}삭제</button></div>`).join('') : '<div class="empty">추가된 규칙이 없습니다.</div>';
   $('fixList').innerHTML = S.fixed.length ? S.fixed.map((f, i) => `<div class="item"><span><b style="display:inline">${esc(labelOf(f.n))}</b> → ${seatName(f.seat)}${active(f.n) ? '' : '<span class="tag off">결번이라 미적용</span>'}</span><button class="btn sm danger" data-fix="${i}">${ic('trash')}삭제</button></div>`).join('') : '<div class="empty">고정된 자리가 없습니다.</div>';
+  fixRender();
   adminHistory();
 }
+/* 자리 직접 배정(고정): 학생 → 자리(고정), 자리 → 자리(맞바꿈), 자리 → 남은 학생 칸(풀기) */
+let fixPick = null;
+const fixAt = i => S.fixed.find(f => f.seat === i);
+function fixRender() {
+  const fixedN = new Set(S.fixed.map(f => f.n)), r = roster();
+  if (fixPick !== null && (fixedN.has(fixPick) || !active(fixPick))) fixPick = null;
+  let html = '<div class="podium">교 탁</div><div class="sec">1분단</div><div class="sec">2분단</div><div class="sec">3분단</div>';
+  for (let row = 0; row < ROWS; row++) for (let s = 0; s < 3; s++) {
+    html += '<div class="pair">';
+    for (const c of [s * 2, s * 2 + 1]) {
+      const i = row * COLS + c, f = fixAt(i), cls = ['seat', 'click', zone(row)];
+      if (f) cls.push('filled', 'fx', 'drag', active(f.n) ? '' : 'off');
+      else if (fixPick !== null) cls.push('target');
+      html += `<div class="${cls.filter(Boolean).join(' ')}" data-f="${i}" title="${seatName(i)}">${f ? `<span class="no">${f.n}</span><span class="nm">${esc(active(f.n) ? nameOf(f.n) : '결번')}</span>` : ''}</div>`;
+    }
+    html += '</div>';
+  }
+  $('fixBoard').innerHTML = html;
+  const left = r.filter(n => !fixedN.has(n));
+  $('fixHint').innerHTML = fixPick !== null ? `<b>${esc(labelOf(fixPick))}</b> 선택됨 · 자리를 클릭하세요` : `남은 학생 ${left.length}명 · 자리로 끌어다 놓으세요`;
+  $('fixChips').innerHTML = left.map(n => { const nm = nameOf(n); return `<button type="button" class="chip drag${fixPick === n ? ' picked' : ''}" data-fpick="${n}" title="${esc(labelOf(n))}">${n}${nm ? `<small>${esc(nm)}</small>` : ''}</button>`; }).join('') || '<div class="empty">모든 학생이 고정되었습니다.</div>';
+}
+function fixPut(n, seat) { S.fixed = S.fixed.filter(f => f.n !== n && f.seat !== seat); S.fixed.push({ n, seat }); }
+function fixDrop(src, dst) {
+  if (src.chip) { if (dst.seat === undefined) return; fixPut(src.chip, dst.seat); }
+  else {
+    const a = fixAt(src.seat); if (!a) return;
+    if (dst.left) S.fixed = S.fixed.filter(f => f !== a);
+    else if (dst.seat !== src.seat) { const b = fixAt(dst.seat); if (b) b.seat = src.seat; a.seat = dst.seat; }
+    else return;
+  }
+  fixPick = null; touch(); adminRefresh();
+  const el = dst.seat !== undefined && $('fixBoard').querySelector(`[data-f="${dst.seat}"]`); if (el) el.classList.add('swap');
+}
+$('fixBoard').addEventListener('click', e => {
+  const s = e.target.closest('.seat'); if (!s) return;
+  const i = +s.dataset.f;
+  if (fixPick !== null) fixPut(fixPick, i);
+  else if (fixAt(i)) S.fixed = S.fixed.filter(f => f.seat !== i);
+  else return;
+  fixPick = null; touch(); adminRefresh();
+});
+$('fixChips').addEventListener('click', e => {
+  const c = e.target.closest('.chip'); if (!c) return;
+  const n = +c.dataset.fpick; fixPick = fixPick === n ? null : n; fixRender();
+});
 function adminHistory() {
   const el = $('adminHist');
   el.innerHTML = S.history.length ? S.history.map((e, i) => `<div class="item"><div><b>${fmt(e.ts, true)}</b><span>${e.assign.filter(Boolean).length}명 배정</span></div><div class="acts"><button class="btn sm danger" data-del="${i}">${ic('trash')}삭제</button></div></div>`).join('') : '<div class="empty">저장된 기록이 없습니다.</div>';
@@ -1040,6 +1111,7 @@ modal.addEventListener('click', e => {
   if (t.dataset.tab) {
     modal.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === t));
     modal.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.dataset.panel === t.dataset.tab));
+    if (t.dataset.tab === 'rules') adminRefresh();   // 학생 탭에서 고친 이름을 규칙·고정 칸에 반영
   } else if (t.dataset.rule !== undefined) { S.rules.splice(+t.dataset.rule, 1); touch(); adminRefresh(); }
   else if (t.dataset.fix !== undefined) { S.fixed.splice(+t.dataset.fix, 1); touch(); adminRefresh(); }
   else if (t.dataset.del !== undefined) deleteHistory(+t.dataset.del);
@@ -1074,15 +1146,6 @@ $('ruleAdd').addEventListener('click', () => {
   if (A === B) return err.textContent = '서로 다른 학생을 선택하세요.';
   if (S.rules.some(r => (r.a === A && r.b === B) || (r.a === B && r.b === A))) return err.textContent = '이미 등록된 조합입니다. 기존 규칙을 삭제한 뒤 추가하세요.';
   S.rules.push({ a: A, b: B, type: $('ruleType').value }); touch(); adminRefresh();
-});
-$('fixAdd').addEventListener('click', () => {
-  const n = +$('fixStudent').value, err = $('fixErr');
-  const seat = (+$('fixRow').value - 1) * COLS + (+$('fixSec').value - 1) * 2 + +$('fixSide').value;
-  err.textContent = '';
-  if (!n) return err.textContent = '학생을 선택하세요.';
-  if (S.fixed.some(f => f.n === n)) return err.textContent = '이미 자리가 고정된 학생입니다. 기존 고정을 삭제한 뒤 추가하세요.';
-  if (S.fixed.some(f => f.seat === seat)) return err.textContent = `${seatName(seat)}에는 이미 다른 학생이 고정되어 있습니다.`;
-  S.fixed.push({ n, seat }); touch(); adminRefresh();
 });
 $('histClear').addEventListener('click', async () => {
   if (!S.history.length || !confirm('저장된 기록을 모두 삭제할까요? 되돌릴 수 없습니다.')) return;
