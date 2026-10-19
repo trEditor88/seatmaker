@@ -1224,6 +1224,9 @@ $('regBtn').addEventListener('click', () => {
 $('regCount').addEventListener('keydown', e => { if (e.key === 'Enter') $('regNames').focus(); });
 $('adminBtn').addEventListener('click', openAdmin);
 $('logoutBtn').addEventListener('click', () => {
+  // 로그아웃하면 이 기기의 명단·결과를 지우므로, 저장 안 한 뽑기 결과나 아직 서버에 안 간 설정이 있으면 한 번 더 확인
+  const unsaved = S.current && !S.current.saved, pending = S.cfgDirty;
+  if ((unsaved || pending) && !confirm((unsaved ? '저장하지 않은 뽑기 결과가 있어요. ' : '아직 서버에 저장되지 않은 설정이 있어요. ') + '로그아웃하면 이 기기에서 사라집니다. 로그아웃할까요?')) return;
   if (store.sget('sl_tok')) fetch(SYNC_URL, { method: 'POST', body: JSON.stringify({ action: 'logout', ...cred() }) }).catch(() => {});
   clearTimeout(autosaveTimer); signedOut(''); wipeLocal();
 });
