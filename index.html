@@ -470,6 +470,13 @@ function loadLocal(uid) {
   if (KEY) try { const p = JSON.parse(store.get(KEY)); if (p && typeof p === 'object') Object.assign(S, p); } catch (e) {}
 }
 const save = () => { if (KEY) store.set(KEY, JSON.stringify(S)); };
+// 로그아웃 때 이 기기에 남은 학급 정보(명단 등)를 지운다. 같은 기기를 다른 계정이 썼을 수 있어 이 사이트 접두 키는 모두
+function wipeLocal() {
+  try {
+    const ks = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(KEY_BASE)) ks.push(k); }
+    ks.forEach(k => localStorage.removeItem(k));
+  } catch (e) {}
+}
 
 let role = store.sget('sl_role'), busy = false, edit = false, sel = null, manual = null, seats = [];
 
@@ -482,6 +489,12 @@ const fixedSeats = () => S.rulesOn === false ? [] : S.fixed.filter(f => active(f
 // 희망 목록 중 실제로 희망 자리에 앉을 학생(결번·직접 배정 학생 제외) — 정원 비교·탈락자 뽑기 기준
 const wishes = kind => { const f = new Set(fixedSeats().map(x => x.n)); return S[kind].filter(n => active(n) && !f.has(n)); };
 const opt = n => `<option value="${n}">${esc(labelOf(n))}</option>`;
+// 배정 대상(roster: 결번 제외) 중 자리판에 없는 학생 번호 — 좌석보다 인원이 많을 때 남는 학생
+const unseatedOf = assign => { const s = new Set(assign.filter(Boolean)); return roster().filter(n => !s.has(n)); };
+// 기록의 meta.unseated(번호만) → 화면 문구. 이름은 이 기기 명단에서 붙임(서버에는 번호만 감)
+const unseatedNums = m => Array.isArray(m && m.unseated) ? m.unseated.filter(n => Number.isInteger(n) && n > 0) : [];
+const unseatedText = m => { const u = unseatedNums(m); return u.length ? `자리 없음: ${u.map(labelOf).join(', ')}` : ''; };
+const unseatedNote = m => { const u = unseatedNums(m); return u.length ? ` · 자리 없음 ${u.length}명(${esc(u.map(labelOf).join(', '))})` : ''; };
 
 let toastTimer;
 function toast(msg) {
@@ -617,7 +630,7 @@ function compute(trials) {
     const v = violations(a, rs);
     if (v < bestV) { bestV = v; best = a; if (!v) break; }
   }
-  return { assign: best, violations: bestV, meta: { front: front.length, back: back.length } };
+  return { assign: best, violations: bestV, meta: { front: front.length, back: back.length, unseated: unseatedOf(best) } };
 }
 
 /* ---------- board ---------- */
@@ -780,7 +793,7 @@ function preView() {
 }
 function postView() {
   const c = S.current, m = c.meta || {};
-  return `<div class="card result"><h3>${m.manual ? '직접 배치 완료' : '뽑기 완료'}${c.saved ? '<span class="badge">저장됨</span>' : ''}</h3><div class="meta">${fmt(c.ts, true)}<br>앞자리 희망 <b>${m.front || 0}명</b> · 뒷자리 희망 <b>${m.back || 0}명</b> 반영</div></div>
+  return `<div class="card result"><h3>${m.manual ? '직접 배치 완료' : '뽑기 완료'}${c.saved ? '<span class="badge">저장됨</span>' : ''}</h3><div class="meta">${fmt(c.ts, true)}<br>앞자리 희망 <b>${m.front || 0}명</b> · 뒷자리 희망 <b>${m.back || 0}명</b> 반영${unseatedText(m) ? `<br><span class="warn">${esc(unseatedText(m))}</span>` : ''}</div></div>
     <div class="card"><div class="grid2">
       <button class="btn" data-act="save">${ic('save')}자리판 저장</button>
       <button class="btn outline" data-act="share">${ic('share')}이미지로 공유</button>
@@ -804,7 +817,7 @@ function manualView() {
 }
 function historyView() {
   const h = S.history;
-  const items = h.length ? h.map((e, i) => `<div class="item"><div><b>${fmt(e.ts, true)}</b><span>앞 ${(e.front || []).length}명 · 뒤 ${(e.back || []).length}명 · ${e.assign.filter(Boolean).length}명 배정</span></div><div class="acts"><button class="btn sm outline" data-load="${i}">${ic('open')}불러오기</button>${role === 'admin' ? `<button class="btn sm danger" data-del="${i}">${ic('trash')}삭제</button>` : ''}</div></div>`).join('') : '<div class="empty">저장된 자리판이 없습니다.</div>';
+  const items = h.length ? h.map((e, i) => `<div class="item"><div><b>${fmt(e.ts, true)}</b><span>앞 ${(e.front || []).length}명 · 뒤 ${(e.back || []).length}명 · ${e.assign.filter(Boolean).length}명 배정${unseatedNote(e.meta)}</span></div><div class="acts"><button class="btn sm outline" data-load="${i}">${ic('open')}불러오기</button>${role === 'admin' ? `<button class="btn sm danger" data-del="${i}">${ic('trash')}삭제</button>` : ''}</div></div>`).join('') : '<div class="empty">저장된 자리판이 없습니다.</div>';
   return `<div class="card"><h3>저장된 자리판<span class="count">${h.length}</span></h3><div class="list">${items}</div></div>`;
 }
 function info() {
@@ -835,7 +848,7 @@ const ACT = {
     S.current = null; edit = false; sel = null; save(); board(); info();
   },
   mdone() {
-    S.current = { assign: manual.assign.slice(), ts: Date.now(), saved: false, meta: { front: 0, back: 0, manual: true } };
+    S.current = { assign: manual.assign.slice(), ts: Date.now(), saved: false, meta: { front: 0, back: 0, manual: true, unseated: unseatedOf(manual.assign) } };
     manual = null; save(); board(); info();
     toast('직접 배치한 자리판을 적용했습니다');
   },
@@ -866,6 +879,8 @@ async function deleteHistory(i) {
 /* ---------- draw flow ---------- */
 async function runDraw() {
   if (busy) return;
+  const over = roster().length - TOTAL;
+  if (over > 0 && !confirm(`좌석보다 ${over}명 많아 ${over}명은 자리 없이 남습니다. 계속할까요?`)) return;
   busy = true;
   if (S.effect) ensureAudio();
   const b = $('info').querySelector('[data-act=draw]'); if (b) b.disabled = true;
@@ -954,7 +969,8 @@ async function countdown() {
 /* ---------- PNG export ---------- */
 function exportPNG() {
   const c = S.current; if (!c) return;
-  const cv = $('cv'), W = 2339, H = 1654; cv.width = W; cv.height = H;
+  const miss = unseatedText(c.meta);   // 자리 없는 학생 줄(있을 때만 캔버스를 늘려 자리판 아래에 그림)
+  const cv = $('cv'), W = 2339, H = 1654 + (miss ? 70 : 0); cv.width = W; cv.height = H;
   const x = cv.getContext('2d');
   const font = (w, s) => `${Math.min(w, 700)} ${s}px "Pretendard","Malgun Gothic","Noto Sans KR",sans-serif`;
   const rect = (px, py, w, h, r) => {
@@ -994,6 +1010,11 @@ function exportPNG() {
   x.textAlign = 'left'; x.font = font(500, 24);
   dot(left + 10, y + 10, '#0066CC'); x.fillStyle = '#6E6E73'; x.fillText('앞자리 희망', left + 30, y + 10);
   dot(left + 210, y + 10, '#15803D'); x.fillStyle = '#6E6E73'; x.fillText('뒷자리 희망', left + 230, y + 10);
+  if (miss) {
+    x.fillStyle = '#B42318'; x.font = font(700, 30);
+    let t = miss; while (t.length > 1 && x.measureText(t).width > W - left * 2) t = t.slice(0, -2) + '…';   // 너무 길면 줄임
+    x.fillText(t, left, y + 75);
+  }
   const d = new Date(c.ts);
   shot.name = `자리배치_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.png`;
   cv.toBlob(b => {
@@ -1093,7 +1114,7 @@ $('fixChips').addEventListener('click', e => {
 });
 function adminHistory() {
   const el = $('adminHist');
-  el.innerHTML = S.history.length ? S.history.map((e, i) => `<div class="item"><div><b>${fmt(e.ts, true)}</b><span>${e.assign.filter(Boolean).length}명 배정</span></div><div class="acts"><button class="btn sm danger" data-del="${i}">${ic('trash')}삭제</button></div></div>`).join('') : '<div class="empty">저장된 기록이 없습니다.</div>';
+  el.innerHTML = S.history.length ? S.history.map((e, i) => `<div class="item"><div><b>${fmt(e.ts, true)}</b><span>${e.assign.filter(Boolean).length}명 배정${unseatedNote(e.meta)}</span></div><div class="acts"><button class="btn sm danger" data-del="${i}">${ic('trash')}삭제</button></div></div>`).join('') : '<div class="empty">저장된 기록이 없습니다.</div>';
 }
 function openAdmin() {
   if (role !== 'admin') return;
@@ -1204,7 +1225,7 @@ $('regCount').addEventListener('keydown', e => { if (e.key === 'Enter') $('regNa
 $('adminBtn').addEventListener('click', openAdmin);
 $('logoutBtn').addEventListener('click', () => {
   if (store.sget('sl_tok')) fetch(SYNC_URL, { method: 'POST', body: JSON.stringify({ action: 'logout', ...cred() }) }).catch(() => {});
-  signedOut('');
+  clearTimeout(autosaveTimer); signedOut(''); wipeLocal();
 });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
