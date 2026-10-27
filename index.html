@@ -103,7 +103,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 .seat.back{background:var(--green-tint)}
 .seat .no{font-size:1.5rem;font-weight:700;color:var(--ink);line-height:1.1;font-variant-numeric:tabular-nums}
 .seat .nm{font-size:.8125rem;color:var(--muted);max-width:95%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.seat.empty .nm,.seat.pre .nm{color:var(--muted);font-size:.75rem;opacity:.8}
+.seat.empty .nm{color:var(--muted);font-size:.75rem;opacity:.8}
 .seat.filled{background:var(--canvas)}
 .seat.wf::after,.seat.wb::after{content:"";position:absolute;top:7px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--blue)}
 .seat.wb::after{background:var(--green)}
@@ -643,7 +643,7 @@ function board(veiled) {
     for (const c of [s * 2, s * 2 + 1]) {
       const i = r * COLS + c, n = cur ? cur[i] : 0, cls = ['seat', zone(r)];
       let body;
-      if (!cur) { cls.push('pre'); body = `<span class="nm">${s + 1}분단</span>`; }
+      if (!cur) { cls.push('pre'); body = ''; }   // 뽑기 전: 분단 이름은 맨 위 머리글에만(자리마다 반복하지 않음)
       else if (n) { cls.push('filled', wf.has(n) ? 'wf' : wb.has(n) ? 'wb' : ''); body = `<span class="no">${n}</span><span class="nm">${esc(nameOf(n))}</span>`; }
       else { cls.push('empty'); body = '<span class="nm">빈자리</span>'; }
       if (veiled) cls.push('veiled');
