@@ -425,7 +425,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 <script>
 (() => {
 'use strict';
-const SYNC_URL = (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && (() => { try { return localStorage.getItem('seat:api'); } catch (e) { return ''; } })()) || 'https://seat-api.dawn-sea-4052.workers.dev';   // 내 PC 에서 열 때만 'seat:api' 로 바꿔 시험   // Cloudflare Worker (seat-lottery/worker, 2026-09-26 이전)
+const SYNC_URL = (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && (() => { try { return localStorage.getItem('seat:api'); } catch (e) { return ''; } })()) || 'https://heoworks.pages.dev/seat';   // 서울 연결 통로(workers.dev 는 한국에서 LA 로 감, 2026-11-05)   // 내 PC 에서 열 때만 'seat:api' 로 바꿔 시험   // Cloudflare Worker (seat-lottery/worker, 2026-09-26 이전)
 const KEY_BASE = 'seat_lottery_v4:', ROWS = 5, COLS = 6, TOTAL = ROWS * COLS, HISTORY_MAX = 20;
 const LIMITS = { front: 8, back: 12 };   // 앞자리 희망 최대 8명, 뒷자리 희망 최대 12명
 const FRONT = [0, 1], BACK = [3, 4];
